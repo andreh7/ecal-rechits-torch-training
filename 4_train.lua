@@ -135,6 +135,12 @@ function train()
    print('==> doing epoch on training data:')
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
    for t = 1,trainData:size(),opt.batchSize do
+      -- call garbage collector
+      if (t % 300) == 0 then
+        collectgarbage()
+
+      end
+
       -- disp progress
       xlua.progress(t, trainData:size())
 
@@ -226,6 +232,8 @@ function train()
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
    torch.save(filename, model)
+
+   collectgarbage()
 
    -- next epoch
    -- confusion:zero()
