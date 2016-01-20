@@ -50,11 +50,13 @@ end
 ----------------------------------------------------------------------
 print '==> defining some tools'
 
+metrics = require 'metrics';
+
 -- classes
-classes = {'1','2','3','4','5','6','7','8','9','0'}
+-- classes = {'1','2','3','4','5','6','7','8','9','0'}
 
 -- This matrix records the current confusion across classes
-confusion = optim.ConfusionMatrix(classes)
+-- confusion = optim.ConfusionMatrix(classes)
 
 -- Log results to files
 trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
@@ -121,6 +123,14 @@ function train()
    -- shuffle at each epoch
    shuffle = torch.randperm(trsize)
 
+   -- for calculating the AUC
+   --
+   -- not sure why we have to define them locally,
+   -- defining them outside seems to suddenly
+   -- reduce the size of e.g. shuffledTargets to half the entries...
+   local shuffledTargets = torch.FloatTensor(trsize)
+   local trainOutput = torch.FloatTensor(trsize)
+
    -- do one epoch
    print('==> doing epoch on training data:')
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
@@ -135,6 +145,12 @@ function train()
          -- load new sample
          local input = trainData.data[shuffle[i]]
          local target = trainData.labels[shuffle[i]]
+
+         -- this is for the calculation of the AUC
+         -- note that the metrics package requires labels
+         -- to be -1 or +1
+         shuffledTargets[i] = 2 * target - 1
+
          if opt.type == 'double' then input = input:double()
          elseif opt.type == 'cuda' then input = input:cuda() end
          table.insert(inputs, input)
@@ -166,7 +182,8 @@ function train()
                           model:backward(inputs[i], df_do)
 
                           -- update confusion
-                          confusion:add(output, targets[i])
+                          -- confusion:add(output, targets[i])
+                          trainOutput[i] = output[1]
                        end
 
                        -- normalize gradients and f(X)
@@ -191,14 +208,18 @@ function train()
    print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
    -- print confusion matrix
-   print(confusion)
+   --   print(confusion)
+
+   -- print AUC
+   roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets)
+   print("train AUC=",metrics.roc.area(roc_points))
 
    -- update logger/plot
-   trainLogger:add{['% mean class accuracy (train set)'] = confusion.totalValid * 100}
-   if opt.plot then
-      trainLogger:style{['% mean class accuracy (train set)'] = '-'}
-      trainLogger:plot()
-   end
+   -- trainLogger:add{['% mean class accuracy (train set)'] = confusion.totalValid * 100}
+   -- if opt.plot then
+   --    trainLogger:style{['% mean class accuracy (train set)'] = '-'}
+   --    trainLogger:plot()
+   -- end
 
    -- save/log current net
    local filename = paths.concat(opt.save, 'model.net')
@@ -207,6 +228,6 @@ function train()
    torch.save(filename, model)
 
    -- next epoch
-   confusion:zero()
+   -- confusion:zero()
    epoch = epoch + 1
 end
