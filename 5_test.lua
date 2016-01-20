@@ -37,6 +37,10 @@ function test()
       -- disp progress
       xlua.progress(t, testData:size())
 
+      if (t % 10 == 0) then
+         collectgarbage()
+      end
+
       -- get new sample
       local input = testData.data[t]
       if opt.type == 'double' then input = input:double()
