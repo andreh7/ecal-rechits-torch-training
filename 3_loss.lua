@@ -28,8 +28,8 @@ if not opt then
    model = nn.Sequential()
 end
 
--- 10-class problem
-noutputs = 10
+-- 2-class problem
+noutputs = 1
 
 ----------------------------------------------------------------------
 print '==> define loss'
@@ -78,18 +78,27 @@ elseif opt.loss == 'mse' then
       local trsize = (#trainData.labels)[1]
       local trlabels = torch.Tensor( trsize, noutputs )
       trlabels:fill(-1)
+      -- for i = 1,trsize do
+      --    trlabels[{ i,trainData.labels[i] }] = 1
+      -- end
+      
       for i = 1,trsize do
-         trlabels[{ i,trainData.labels[i] }] = 1
+         trlabels[{ i,1 }] = 2 * trainData.labels[i] - 1
       end
+
       trainData.labels = trlabels
 
       -- convert test labels
       local tesize = (#testData.labels)[1]
       local telabels = torch.Tensor( tesize, noutputs )
       telabels:fill(-1)
+      -- for i = 1,tesize do
+      --    telabels[{ i,testData.labels[i] }] = 1
+      -- end
       for i = 1,tesize do
-         telabels[{ i,testData.labels[i] }] = 1
+         telabels[{ i,1 }] = 2 * testData.labels[i] - 1
       end
+
       testData.labels = telabels
    end
 
