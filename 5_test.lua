@@ -9,13 +9,18 @@ require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'   -- an optimization package, for online and batch methods
 
+metrics = require 'metrics';
+
 ----------------------------------------------------------------------
 print '==> defining test procedure'
+
 
 -- test function
 function test()
    -- local vars
    local time = sys.clock()
+   local testOutput = torch.FloatTensor(tesize)
+   local shuffledTargets = torch.FloatTensor(tesize)
 
    -- averaged param use?
    if average then
@@ -40,7 +45,11 @@ function test()
 
       -- test sample
       local pred = model:forward(input)
-      confusion:add(pred, target)
+      -- confusion:add(pred, target)
+      testOutput[t] = pred[1]
+
+      -- the metrics package needs labels to be +1 and -1
+      shuffledTargets[t] = 2 * target - 1
    end
 
    -- timing
@@ -49,14 +58,19 @@ function test()
    print("\n==> time to test 1 sample = " .. (time*1000) .. 'ms')
 
    -- print confusion matrix
-   print(confusion)
+   -- print(confusion)
+
+   -- print AUC
+   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets)
+   print("test AUC=",metrics.roc.area(roc_points))
+   
 
    -- update log/plot
-   testLogger:add{['% mean class accuracy (test set)'] = confusion.totalValid * 100}
-   if opt.plot then
-      testLogger:style{['% mean class accuracy (test set)'] = '-'}
-      testLogger:plot()
-   end
+   -- testLogger:add{['% mean class accuracy (test set)'] = confusion.totalValid * 100}
+   -- if opt.plot then
+   --    testLogger:style{['% mean class accuracy (test set)'] = '-'}
+   --    testLogger:plot()
+   -- end
 
    -- averaged param use?
    if average then
@@ -65,5 +79,5 @@ function test()
    end
    
    -- next iteration:
-   confusion:zero()
+   -- confusion:zero()
 end
