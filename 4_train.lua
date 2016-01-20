@@ -142,7 +142,9 @@ function train()
       end
 
       -- disp progress
-      xlua.progress(t, trainData:size())
+      if (t % 100) == 0 then
+        xlua.progress(t, trainData:size())
+      end
 
       -- create mini batch
       local inputs = {}
