@@ -157,10 +157,19 @@ function train()
          -- this is for the calculation of the AUC
          -- note that the metrics package requires labels
          -- to be -1 or +1
-         shuffledTargets[i] = 2 * target - 1
+         -- print("i=",i, "target=",target[1],'shuffledTargets[i]=',shuffledTargets[i])
 
-         if opt.type == 'double' then input = input:double()
-         elseif opt.type == 'cuda' then input = input:cuda() end
+         -- conversion from 0 / 1 to -1 / +1 already happened elsewhere
+         shuffledTargets[i] = target[1]
+
+         if opt.type == 'double' then 
+           input = input:double()
+           target = target:double()
+         elseif opt.type == 'cuda' then 
+           input = input:cuda() 
+           target = target:cuda()
+         end
+
          table.insert(inputs, input)
          table.insert(targets, target)
       end
@@ -182,6 +191,7 @@ function train()
                        for i = 1,#inputs do
                           -- estimate f
                           local output = model:forward(inputs[i])
+                          -- print("ZZ targets=",targets)
                           local err = criterion:forward(output, targets[i])
                           f = f + err
 
@@ -219,6 +229,14 @@ function train()
    --   print(confusion)
 
    -- print AUC
+   -- print("trainOutput=",trainOutput[1], trainOutput[2], trainOutput[3], trainOutput[4])
+   -- 
+   -- for k = 1,50 do
+   --   if (shuffledTargets[k] ~= 1 and shuffledTargets[k] ~= -1) then
+   --     print("shuffledTargets[",k,"]=", shuffledTargets[k])
+   --   end
+   -- end
+
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets)
    print("train AUC=",metrics.roc.area(roc_points))
 
