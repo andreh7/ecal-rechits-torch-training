@@ -210,6 +210,8 @@ function train()
 
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
+                          -- note that #inputs is the minibatch size !
+
                           -- estimate f
                           local output = model:forward(inputs[i])
                           -- print("ZZ targets=",targets)
