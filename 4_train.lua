@@ -160,6 +160,12 @@ function train()
          -- print("i=",i, "target=",target[1],'shuffledTargets[i]=',shuffledTargets[i])
 
          -- conversion from 0 / 1 to -1 / +1 already happened elsewhere
+
+         if opt.loss == 'bce' then
+           -- TODO: may take some unnecessary CPU time
+           target = torch.FloatTensor({target})
+         end
+
          shuffledTargets[i] = target[1]
 
          if opt.type == 'double' then 
@@ -238,6 +244,16 @@ function train()
    -- end
 
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets)
+
+   if opt.loss == 'bce' then
+     -- need to convert from 0..1 to -1..+1 for ROC curve calculation
+     -- note that the order in which the tensor operations are done is important
+     -- see https://github.com/torch/torch7/issues/28#issuecomment-39877253
+     roc_points, roc_thresholds = metrics.roc.points(trainOutput *2  - 1, shuffledTargets * 2 - 1)
+   else
+     roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets)
+   end
+
    print("train AUC=",metrics.roc.area(roc_points))
 
    -- update logger/plot

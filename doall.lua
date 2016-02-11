@@ -34,7 +34,8 @@ cmd:option('-size', 'full', 'how many samples do we load: small | full | extra')
 -- model:
 cmd:option('-model', 'convnet', 'type of model to construct: linear | mlp | convnet')
 -- loss:
-cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margin')
+-- cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margin')
+cmd:option('-loss', 'mse', 'type of loss function to minimize: nll | mse | margin | bce')
 -- training:
 cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
 cmd:option('-plot', false, 'live plot')

@@ -20,7 +20,7 @@ if not opt then
    cmd:text('SVHN Loss Function')
    cmd:text()
    cmd:text('Options:')
-   cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margin')
+   cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margin | bce')
    cmd:text()
    opt = cmd:parse(arg or {})
 
@@ -55,6 +55,15 @@ elseif opt.loss == 'nll' then
    -- as arguments.
 
    criterion = nn.ClassNLLCriterion()
+
+   trlabels = trainData.labels[i]
+   telabels = testData.labels[i]
+
+elseif opt.loss == 'bce' then
+   -- we keep the target output at 0..1
+
+   model:add(nn.Sigmoid())
+   criterion = nn.BCECriterion()
 
 elseif opt.loss == 'mse' then
 

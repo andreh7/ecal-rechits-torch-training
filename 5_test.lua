@@ -49,6 +49,16 @@ function test()
 
       -- test sample
       local pred = model:forward(input)
+
+      if opt.loss == 'bce' then
+          -- we need outputs in the range -1..+1 for AUC
+          -- but we use a sigmoid at the output layer
+          -- (to be able to use the binary cross entropy loss)
+          pred = 2 * pred - 1
+          target = 2 * target - 1
+      end
+
+
       -- confusion:add(pred, target)
       testOutput[t] = pred[1]
 
