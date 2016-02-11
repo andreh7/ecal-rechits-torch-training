@@ -53,7 +53,8 @@ function test()
       testOutput[t] = pred[1]
 
       -- the metrics package needs labels to be +1 and -1
-      shuffledTargets[t] = 2 * target - 1
+      -- conversion from 0 / 1 to -1 / +1 already happened elsewhere
+      shuffledTargets[t] = target[1]
    end
 
    -- timing
@@ -65,9 +66,14 @@ function test()
    -- print(confusion)
 
    -- print AUC
-   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets)
-   print("test AUC=",metrics.roc.area(roc_points))
-   
+
+   -- collectgarbage()
+   -- print("HERE1")
+   -- roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets)
+   -- print("HERE2")
+   -- print("test AUC=",metrics.roc.area(roc_points))
+   -- print("HERE3")   
+
 
    -- update log/plot
    -- testLogger:add{['% mean class accuracy (test set)'] = confusion.totalValid * 100}
