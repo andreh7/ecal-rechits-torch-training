@@ -77,14 +77,24 @@ elseif opt.loss == 'mse' then
       -- convert training labels:
       local trsize = (#trainData.labels)[1]
       local trlabels = torch.Tensor( trsize, noutputs )
+      print("HERE1")
+
       trlabels:fill(-1)
+
+      print("HERE2")
       -- for i = 1,trsize do
       --    trlabels[{ i,trainData.labels[i] }] = 1
       -- end
       
       for i = 1,trsize do
          trlabels[{ i,1 }] = 2 * trainData.labels[i] - 1
+
+         if (i % 100 == 0) then
+            collectgarbage()
+         end
       end
+
+      print("HERE3")
 
       trainData.labels = trlabels
 
@@ -97,6 +107,11 @@ elseif opt.loss == 'mse' then
       -- end
       for i = 1,tesize do
          telabels[{ i,1 }] = 2 * testData.labels[i] - 1
+
+         if (i % 100 == 0) then
+            collectgarbage()
+         end
+
       end
 
       testData.labels = telabels
@@ -111,3 +126,11 @@ end
 ----------------------------------------------------------------------
 print '==> here is the loss function:'
 print(criterion)
+
+----------------------------------------------------------------------
+
+-- print model after the output layer has potentially been modified
+print '==> here is the model:'
+print(model)
+
+----------------------------------------------------------------------
