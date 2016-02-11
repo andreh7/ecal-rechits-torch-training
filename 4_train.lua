@@ -113,6 +113,11 @@ end
 ----------------------------------------------------------------------
 print '==> defining training procedure'
 
+progressBarSteps = 100
+
+-- round to batch size
+progressBarSteps = math.floor(progressBarSteps / opt.batchSize) * opt.batchSize
+
 function train()
 
    -- epoch tracker
@@ -146,7 +151,7 @@ function train()
       end
 
       -- disp progress
-      if (t % 100) == 0 then
+      if (t % progressBarSteps) == 1 then
         xlua.progress(t, trainData:size())
       end
 
