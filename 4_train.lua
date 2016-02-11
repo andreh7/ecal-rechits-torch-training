@@ -224,7 +224,12 @@ function train()
 
                           -- update confusion
                           -- confusion:add(output, targets[i])
-                          trainOutput[i] = output[1]
+                          -- print("output=",output, "target=",targets[i])
+
+                          -- note that i is the index inside the minibatch
+                          -- note that t and i are 1 based, so when
+                          -- adding them, one must subtract 1
+                          trainOutput[t + i - 1] = output[1]
                        end
 
                        -- normalize gradients and f(X)
