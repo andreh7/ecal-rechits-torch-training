@@ -41,6 +41,10 @@ if not opt then
 end
 
 ----------------------------------------------------------------------
+
+print("setting number of threads to 24")
+torch.setnumthreads(24)
+
 -- CUDA?
 if opt.type == 'cuda' then
    model:cuda()
