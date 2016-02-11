@@ -265,7 +265,12 @@ function train()
    --   end
    -- end
 
-   roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets)
+   -- TODO: check why this fails (at least with BCE)
+   -- confusion = optim.ConfusionMatrix( {-1, 1})
+   -- confusion.add(trainOutput, shuffledTargets);
+   -- print("confusion matrix:")
+   -- print(confusion)
+
 
    if opt.loss == 'bce' then
      -- need to convert from 0..1 to -1..+1 for ROC curve calculation
