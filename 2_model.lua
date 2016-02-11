@@ -74,7 +74,7 @@ elseif opt.model == 'mlp' then
 
 elseif opt.model == 'convnet' then
 
-   if opt.type == 'cuda' then
+   if opt.type == 'cuda' or opt.type == 'float' then
       -- a typical modern convolution network (conv+relu+pool)
       model = nn.Sequential()
 
