@@ -132,6 +132,12 @@ function train()
    -- shuffle at each epoch
    shuffle = torch.randperm(trsize)
 
+   -- calculate the inverse mapping
+   invshuffle = torch.IntTensor(trsize)
+   for i = 1, trsize do
+     invshuffle[shuffle[i]] = i
+   end
+
    -- for calculating the AUC
    --
    -- not sure why we have to define them locally,
