@@ -42,8 +42,8 @@ end
 
 ----------------------------------------------------------------------
 
-print("setting number of threads to 24")
-torch.setnumthreads(24)
+print("setting number of threads to", opt.threads)
+torch.setnumthreads(opt.threads)
 
 -- CUDA?
 if opt.type == 'cuda' then
@@ -250,8 +250,8 @@ function train()
 
    -- time taken
    time = sys.clock() - time
-   time = time / trainData:size()
-   print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
+   print("\n==> time to learn 1 sample = " .. (time / trainData:size() * 1000) .. 'ms')
+   print("\n==> time for entire batch:",time / 60.0,"min")
 
    -- print confusion matrix
    --   print(confusion)

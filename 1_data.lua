@@ -61,8 +61,8 @@ trsize = 2709506
 tesize =  904455
 
 -- DEBUG
-trsize = 27095
-tesize = 9045
+-- trsize = 27095
+-- tesize = 9045
 
 -- trsize = 100
 -- tesize = 50

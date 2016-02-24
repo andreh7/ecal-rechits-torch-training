@@ -62,6 +62,8 @@ elseif opt.type == 'cuda' then
    require 'cunn'
    torch.setdefaulttensortype('torch.FloatTensor')
 end
+
+-- delayed to just before the training starts
 torch.setnumthreads(opt.threads)
 torch.manualSeed(opt.seed)
 

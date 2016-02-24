@@ -54,13 +54,18 @@ function test()
           -- we need outputs in the range -1..+1 for AUC
           -- but we use a sigmoid at the output layer
           -- (to be able to use the binary cross entropy loss)
-          pred = 2 * pred - 1
-          target = 2 * target - 1
+          pred = pred * 2 - 1
+          target = target * 2 - 1
       end
 
 
       -- confusion:add(pred, target)
       testOutput[t] = pred[1]
+
+      if opt.loss == 'bce' then
+        -- TODO: may take some unnecessary CPU time
+        target = torch.FloatTensor({target})
+      end
 
       -- the metrics package needs labels to be +1 and -1
       -- conversion from 0 / 1 to -1 / +1 already happened elsewhere
@@ -79,9 +84,9 @@ function test()
 
    -- collectgarbage()
    -- print("HERE1")
-   -- roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets)
+   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets)
    -- print("HERE2")
-   -- print("test AUC=",metrics.roc.area(roc_points))
+   print("test AUC=",metrics.roc.area(roc_points))
    -- print("HERE3")   
 
 
