@@ -17,6 +17,7 @@
 -- Clement Farabet
 ----------------------------------------------------------------------
 require 'torch'
+require 'os'
 
 ----------------------------------------------------------------------
 print '==> processing options'
@@ -37,7 +38,7 @@ cmd:option('-model', 'convnet', 'type of model to construct: linear | mlp | conv
 -- cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margin')
 cmd:option('-loss', 'mse', 'type of loss function to minimize: nll | mse | margin | bce')
 -- training:
-cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
+cmd:option('-save', 'results-' + os.date("%Y-%m-%-d-%H%M%S"), 'subdirectory to save/log experiments in')
 cmd:option('-plot', false, 'live plot')
 cmd:option('-optimization', 'SGD', 'optimization method: SGD | ASGD | CG | LBFGS')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
