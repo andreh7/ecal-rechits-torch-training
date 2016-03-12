@@ -15,8 +15,8 @@ metrics = require 'metrics';
 ----------------------------------------------------------------------
 
 -- TODO should use HT range 40-100 first
-train_file = '../torch-utils/gjet-ht-400-600-test.t7'
-test_file  = '../torch-utils/gjet-ht-400-600-train.t7'
+train_file = '../torch-utils/gjet-ht-400-600-train.t7'
+test_file  = '../torch-utils/gjet-ht-400-600-test.t7'
 
 -- input dimensions
 nfeats = 1
