@@ -6,6 +6,7 @@ require 'optim'
 require 'os'
 require 'math'
 require 'io'
+require 'xlua' -- for progress bars
 
 -- needed for AUC
 metrics = require 'metrics';
@@ -44,10 +45,15 @@ outputDir = 'results-' .. os.date("%Y-%m-%-d-%H%M%S")
 
 batchSize = 1
 
+progressBarSteps = 500
+
 -- if we don't do this, the weights will be double and
 -- the data will be float and we get an error
 torch.setdefaulttensortype('torch.FloatTensor')
 ----------------------------------------------------------------------
+
+-- round to batch size
+progressBarSteps = math.floor(progressBarSteps / batchSize) * batchSize
 
 ----------
 -- parse command line arguments
@@ -273,6 +279,11 @@ function train()
 
       end
 
+      -- display progress
+      if (t % progressBarSteps) == 1 then
+        xlua.progress(t, trainData:size())
+      end
+
       -- create a mini batch
       local inputs = {}
       local targets = {}
@@ -396,6 +407,11 @@ function test()
 
       if (t % 10 == 0) then
          collectgarbage()
+      end
+
+      -- show progress bar
+      if (t % progressBarSteps) == 1 then
+        xlua.progress(t, testData:size())
       end
 
       -- get new sample
