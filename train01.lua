@@ -81,7 +81,13 @@ function loadDataset(fname, size)
   
      size = function() return size end
   }
-  
+
+  -- normalize weights to have an average
+  -- of one per sample
+  -- (weights should in principle directly
+  -- affect the effective learning rate of SGD)
+  data.weights:mul(data.weights:size()[1] / data.weights:sum())
+ 
   return data, size
 
 end -- function loadDataset
