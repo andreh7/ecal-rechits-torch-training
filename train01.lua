@@ -5,6 +5,7 @@ require 'nn'
 require 'optim'   
 require 'os'
 require 'math'
+require 'io'
 
 -- needed for AUC
 metrics = require 'metrics';
@@ -30,8 +31,11 @@ poolsize = 2
 
 -- in the above example, it's abut 75% training and 25% testing...
 -- TODO: FIX THESE NUMBERS
-trsize = 2709506
-tesize =  904455
+-- trsize = 2709506
+-- tesize =  904455
+
+trsize = 10000
+tesize = 1000
 
 threads = 1
 
@@ -83,8 +87,15 @@ testData = {
 
 tesize = math.min(tesize, testData.labels:size()[1])
 
-----------------------------------------------------------------------
--- print '==> preprocessing data'
+----------
+-- open log file
+----------
+os.execute('mkdir -p ' .. outputDir)
+log,err = io.open(paths.concat(outputDir, 'train.log'), "w")
+
+if log == nil then
+  print("could not open log file",err)
+end
 
 ----------------------------------------------------------------------
 -- model
@@ -96,8 +107,6 @@ ninputs = nfeats*width*height
 
 
 ----------------------------------------------------------------------
-print '==> construct model'
-
 -- a typical modern convolution network (conv+relu+pool)
 model = nn.Sequential()
 
@@ -151,8 +160,6 @@ model:add(nn.Linear(nstates[3], noutputs))
 ----------------------------------------------------------------------
 -- loss function
 ----------------------------------------------------------------------
-print 'defining the loss function'
-
 -- binary cross entropy loss
 
 -- we keep the target output at 0..1
@@ -162,12 +169,8 @@ criterion = nn.BCECriterion(trainData.weights)
 
 criterion = nn.BCECriterion()
 
-print('----------')
-print('loss function:')
-print('----------')
-print(criterion)
-print('----------')
-
+print('loss function:', criterion)
+log:write('loss function: ' .. tostring(criterion) .. "\n")
 
 ----------------------------------------
 
@@ -179,23 +182,29 @@ print()
 print(model)
 print('----------')
 
+log:write('----------\n')
+log:write('model after adding the loss function:\n')
+log:write("\n")
+log:write(tostring(model) .. "\n")
+log:write('----------\n')
+
+
 ----------------------------------------------------------------------
 -- training
 ----------------------------------------------------------------------
 
-print("setting number of threads to", threads)
+print("setting number of threads to" .. threads)
+log:write("setting number of threads to " .. threads .. "\n")
 torch.setnumthreads(threads)
 
 ----------------------------------------------------------------------
 
--- Log results to files
-trainLogger = optim.Logger(paths.concat(outputDir, 'train.log'))
-testLogger  = optim.Logger(paths.concat(outputDir, 'test.log'))
 
 -- get all trainable parameters as a flat vector
 parameters, gradParameters = model:getParameters()
 
-print("the model has", #parameters, "parameters") 
+print("the model has " ..  parameters:size()[1] .. " parameters") 
+log:write("the model has " .. parameters:size()[1] .. " parameters\n") 
 
 ----------------------------------------
 
@@ -222,7 +231,14 @@ function train()
 
    -- to measure the time needed for one training batch
    local startTime = sys.clock()
-   print("starting epoch",epoch,"at",os.date("%Y-%m-%d %H:%M:%S",startTime))
+   print("----------------------------------------")
+   print("starting epoch " .. epoch .. " at ",os.date("%Y-%m-%d %H:%M:%S",startTime))
+   print("----------------------------------------")
+
+   log:write("----------------------------------------\n")
+   log:write("starting epoch " .. epoch .. " at " .. os.date("%Y-%m-%d %H:%M:%S",startTime) .. "\n")
+   log:write("----------------------------------------\n")
+   log:flush()
 
    -- set model to training mode (for modules that differ in training and testing, like dropout)
    model:training()
@@ -246,8 +262,10 @@ function train()
    local trainOutput     = torch.FloatTensor(trsize)
 
    -- do one epoch
-   print('==> doing epoch on training data:')
-   print("==> online epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
+   print("training epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
+   log:write("training epoch # " .. tostring(epoch) .. ' [batchSize = ' .. tostring(batchSize) .. ']\n')
+   log:flush()
+
    for t = 1,trainData:size(), batchSize do
       -- call garbage collector
       if (t % 300) == 0 then
@@ -324,20 +342,25 @@ function train()
    -- time taken
    local time = sys.clock() - startTime
 
-   print("\ntime to learn 1 sample = " .. (time / trainData:size() * 1000) .. 'ms')
-   print("\ntime for entire batch:",time / 60.0,"min")
+   print("\n")
+   print("time to learn 1 sample: " .. (time / trainData:size() * 1000) .. ' ms')
+   print("time for entire batch:",time / 60.0,"min")
+
+   log:write("\n")
+   log:write("time to learn 1 sample: " .. tostring(time / trainData:size() * 1000) .. ' ms\n')
+   log:write("time for entire batch: " .. tostring(time / 60.0) .. " min\n")
 
    -- we have values 0 and 1 as class labels
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1)
 
    local trainAUC = metrics.roc.area(roc_points)
-   print("train AUC=", trainAUC)
-   trainLogger:add{['AUC (train set)'] = trainAUC}
+   print("train AUC:", trainAUC)
+   log:write("train AUC: " .. tostring(trainAUC) .. "\n")
 
    -- save/log current net
    local filename = paths.concat(outputDir, 'model' .. string.format("%04d", epoch) .. '.net')
-   os.execute('mkdir -p ' .. sys.dirname(filename))
-   print('saving model to '..filename)
+   print('saving model to '.. filename)
+   log:write('saving model to '.. filename .. "\n")
    torch.save(filename, model)
 
    collectgarbage()
@@ -367,7 +390,8 @@ function test()
    model:evaluate()
 
    -- test over test data
-   print('==> testing on test set:')
+   print('testing on test set')
+   log:write('testing on test set\n')
    for t = 1,testData:size() do
 
       if (t % 10 == 0) then
@@ -393,13 +417,22 @@ function test()
    -- timing
    local time = sys.clock() - startTime
    time = time / testData:size()
-   print("\n==> time to test 1 sample = " .. (time*1000) .. 'ms')
-   print("\ntime for entire test batch:",time / 60.0,"min")
+   print("\n")
+   print("time to test 1 sample: " .. (time*1000) .. ' ms')
+   print("time for entire test batch:",time / 60.0,"min")
+
+   log:write('\n')
+   log:write("time to test 1 sample: " .. tostring(time*1000) .. ' ms\n')
+   log:write("time for entire test batch: " .. tostring(time / 60.0) .. " min\n")
 
    roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1)
    local testAUC = metrics.roc.area(roc_points)
-   print("test AUC=",testAUC)
-   testLogger:add{['AUC (test set)'] = testAUC}
+   print("test AUC:", testAUC)
+   print
+
+   log:write("test AUC: " .. tostring(testAUC) .. "\n")
+   log:write("\n")
+   log:flush()
 
 end
 
