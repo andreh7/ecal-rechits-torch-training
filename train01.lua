@@ -369,8 +369,6 @@ function test()
    -- test over test data
    print('==> testing on test set:')
    for t = 1,testData:size() do
-      -- disp progress
-      xlua.progress(t, testData:size())
 
       if (t % 10 == 0) then
          collectgarbage()
@@ -401,7 +399,7 @@ function test()
    roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1)
    local testAUC = metrics.roc.area(roc_points)
    print("test AUC=",testAUC)
-   trainLogger:add{['AUC (test set)'] = testAUC}
+   testLogger:add{['AUC (test set)'] = testAUC}
 
 end
 
