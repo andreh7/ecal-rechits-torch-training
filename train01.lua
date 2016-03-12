@@ -4,10 +4,10 @@ require 'torch'
 require 'nn'    
 require 'optim'   
 require 'os'
+require 'math'
 
 -- needed for AUC
--- metrics = require 'metrics';
-require 'metrics'
+metrics = require 'metrics';
 
 ----------------------------------------------------------------------
 -- parameters
@@ -36,8 +36,13 @@ tesize =  904455
 threads = 1
 
 -- subdirectory to results in
-outputDir = 'results-' + os.date("%Y-%m-%-d-%H%M%S")
+outputDir = 'results-' .. os.date("%Y-%m-%-d-%H%M%S")
 
+batchSize = 1
+
+-- if we don't do this, the weights will be double and
+-- the data will be float and we get an error
+torch.setdefaulttensortype('torch.FloatTensor')
 ----------------------------------------------------------------------
 
 ----------
@@ -45,7 +50,7 @@ outputDir = 'results-' + os.date("%Y-%m-%-d-%H%M%S")
 ----------
 
 ----------------------------------------------------------------------
-print '==> loading dataset'
+print 'loading dataset'
 
 -- Note: the data, in X, is 3-d: the 1st dim indexes the samples
 -- and the last two dims index the width and height of the samples.
@@ -62,8 +67,9 @@ trainData = {
    size = function() return trsize end
 }
 
+trsize = math.min(trsize, trainData.labels:size()[1])
 
--- Finally we load the test data.
+-- load test data
 
 loaded = torch.load(test_file,'binary')
 testData = {
@@ -74,6 +80,8 @@ testData = {
    weights = loaded.weight,
    size = function() return tesize end
 }
+
+tesize = math.min(tesize, testData.labels:size()[1])
 
 ----------------------------------------------------------------------
 -- print '==> preprocessing data'
@@ -150,24 +158,26 @@ print 'defining the loss function'
 -- we keep the target output at 0..1
 
 model:add(nn.Sigmoid())
-criterion = nn.BCECriterion(train:weights)
+criterion = nn.BCECriterion(trainData.weights)
 
-print '----------'
-print 'loss function:'
-print '----------'
+criterion = nn.BCECriterion()
+
+print('----------')
+print('loss function:')
+print('----------')
 print(criterion)
-print '----------'
+print('----------')
 
 
 ----------------------------------------
 
 -- print model after the output layer has potentially been modified
 
-print '----------'
-print 'model after adding the loss function:'
-print
+print('----------')
+print('model after adding the loss function:')
+print()
 print(model)
-print '----------'
+print('----------')
 
 ----------------------------------------------------------------------
 -- training
@@ -237,8 +247,8 @@ function train()
 
    -- do one epoch
    print('==> doing epoch on training data:')
-   print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
-   for t = 1,trainData:size(),opt.batchSize do
+   print("==> online epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
+   for t = 1,trainData:size(), batchSize do
       -- call garbage collector
       if (t % 300) == 0 then
         collectgarbage()
@@ -249,11 +259,11 @@ function train()
       local inputs = {}
       local targets = {}
       local weights = {}
-      for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
+      for i = t,math.min(t + batchSize - 1, trainData:size()) do
          -- load new sample
-         local input = trainData.data[shuffle[i]]
+         local input  = trainData.data[shuffle[i]]
          local target = trainData.labels[shuffle[i]]
-         local weight = trainDAta.weights[shuffle[i]]
+         local weight = trainData.weights[shuffle[i]]
 
          -- TODO: may take some unnecessary CPU time
          target = torch.FloatTensor({target})
@@ -368,21 +378,10 @@ function test()
 
       -- get new sample
       local input = testData.data[t]
-      if opt.type == 'double' then input = input:double()
-      elseif opt.type == 'cuda' then input = input:cuda() end
       local target = testData.labels[t]
 
       -- test sample
       local pred = model:forward(input)
-
-      if opt.loss == 'bce' then
-          -- we need outputs in the range -1..+1 for AUC
-          -- but we use a sigmoid at the output layer
-          -- (to be able to use the binary cross entropy loss)
-          pred = pred * 2 - 1
-          target = target * 2 - 1
-      end
-
 
       -- confusion:add(pred, target)
       testOutput[t] = pred[1]
