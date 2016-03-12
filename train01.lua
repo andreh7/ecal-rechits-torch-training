@@ -30,13 +30,15 @@ filtsize = 5
 poolsize = 2
 
 
--- in the above example, it's abut 75% training and 25% testing...
--- TODO: FIX THESE NUMBERS
--- trsize = 2709506
--- tesize =  904455
+-- if one specifies nothing (or nil), the full sizes
+-- from the input samples are taken
+-- 
+-- if one specifies values < 1 these are interpreted
+-- as fractions of the sample
+-- trsize, tesize = 10000, 1000
+trsize, tesize = 0.1, 0.1
 
-trsize = 10000
-tesize = 1000
+
 
 threads = 1
 
@@ -66,6 +68,14 @@ print 'loading dataset'
 -- and the last two dims index the width and height of the samples.
 
 loaded = torch.load(train_file,'binary')
+
+if trsize ~= nil and trsize < 1 then
+  trsize = math.floor(trsize * loaded.y:size()[1] + 0.5)
+else
+  trsize = trsize or loaded.y:size()[1]
+  trsize = math.min(trsize, loaded.y:size()[1])
+end
+
 trainData = {
    data   = loaded.X,
 
@@ -77,11 +87,18 @@ trainData = {
    size = function() return trsize end
 }
 
-trsize = math.min(trsize, trainData.labels:size()[1])
 
 -- load test data
 
 loaded = torch.load(test_file,'binary')
+
+if tesize ~= nul and tesize < 1 then
+  tesize = math.floor(tesize * loaded.y:size()[1] + 0.5)
+else
+  tesize = tesize or loaded.y:size()[1]
+  tesize = math.min(tesize, loaded.y:size()[1])
+end
+
 testData = {
 
    data = loaded.X,
@@ -91,7 +108,6 @@ testData = {
    size = function() return tesize end
 }
 
-tesize = math.min(tesize, testData.labels:size()[1])
 
 ----------
 -- open log file
@@ -211,6 +227,11 @@ parameters, gradParameters = model:getParameters()
 
 print("the model has " ..  parameters:size()[1] .. " parameters") 
 log:write("the model has " .. parameters:size()[1] .. " parameters\n") 
+
+print("using " .. trsize .. " train samples and " .. tesize .. " test samples\n")
+
+log:write("\n")
+log:write("using " .. trsize .. " train samples and " .. tesize .. " test samples\n\n")
 
 ----------------------------------------
 
@@ -444,7 +465,7 @@ function test()
    roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1)
    local testAUC = metrics.roc.area(roc_points)
    print("test AUC:", testAUC)
-   print
+   print()
 
    log:write("test AUC: " .. tostring(testAUC) .. "\n")
    log:write("\n")
