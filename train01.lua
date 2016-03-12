@@ -57,6 +57,35 @@ torch.setdefaulttensortype('torch.FloatTensor')
 -- round to batch size
 progressBarSteps = math.floor(progressBarSteps / batchSize) * batchSize
 
+
+----------------------------------------------------------------------
+
+function loadDataset(fname, size)
+
+  loaded = torch.load(fname,'binary')
+
+  if size ~= nil and size < 1 then
+    size = math.floor(size * loaded.y:size()[1] + 0.5)
+  else
+    size = size or loaded.y:size()[1]
+    size = math.min(size, loaded.y:size()[1])
+  end
+  
+  data = {
+     data   = loaded.X,
+  
+     -- labels are 0/1 because we use cross-entropy loss
+     labels = loaded.y,
+  
+     weights = loaded.weight,
+  
+     size = function() return size end
+  }
+  
+  return data, size
+
+end -- function loadDataset
+
 ----------
 -- parse command line arguments
 ----------
@@ -67,47 +96,8 @@ print 'loading dataset'
 -- Note: the data, in X, is 3-d: the 1st dim indexes the samples
 -- and the last two dims index the width and height of the samples.
 
-loaded = torch.load(train_file,'binary')
-
-if trsize ~= nil and trsize < 1 then
-  trsize = math.floor(trsize * loaded.y:size()[1] + 0.5)
-else
-  trsize = trsize or loaded.y:size()[1]
-  trsize = math.min(trsize, loaded.y:size()[1])
-end
-
-trainData = {
-   data   = loaded.X,
-
-   -- labels are 0/1 because we use cross-entropy loss
-   labels = loaded.y,
-
-   weights = loaded.weight,
-
-   size = function() return trsize end
-}
-
-
--- load test data
-
-loaded = torch.load(test_file,'binary')
-
-if tesize ~= nul and tesize < 1 then
-  tesize = math.floor(tesize * loaded.y:size()[1] + 0.5)
-else
-  tesize = tesize or loaded.y:size()[1]
-  tesize = math.min(tesize, loaded.y:size()[1])
-end
-
-testData = {
-
-   data = loaded.X,
-   labels = loaded.y,
-
-   weights = loaded.weight,
-   size = function() return tesize end
-}
-
+trainData, trsize = loadDataset(train_file, trsize)
+testData,  tesize = loadDataset(test_file, tesize)
 
 ----------
 -- open log file
