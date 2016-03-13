@@ -87,6 +87,9 @@ function loadDataset(fname, size)
   -- (weights should in principle directly
   -- affect the effective learning rate of SGD)
   data.weights:mul(data.weights:size()[1] / data.weights:sum())
+
+  -- DEBUG: fix weights to one
+  data.weights = torch.Tensor(data.weights:size()[1]):fill(1):float()
  
   return data, size
 
@@ -269,12 +272,6 @@ function train()
    -- shuffle at each epoch
    shuffle = torch.randperm(trsize)
 
-   -- calculate the inverse mapping
-   invshuffle = torch.IntTensor(trsize)
-   for i = 1, trsize do
-     invshuffle[shuffle[i]] = i
-   end
-
    -- for calculating the AUC
    --
    -- not sure why we have to define them locally,
@@ -293,7 +290,6 @@ function train()
       -- call garbage collector
       if (t % 300) == 0 then
         collectgarbage()
-
       end
 
       -- display progress
@@ -315,7 +311,8 @@ function train()
          target = torch.FloatTensor({target})
 
          -- for ROC curve evaluation on training sample
-         shuffledTargets[i] = target[1]
+         shuffledTargets[i] = target
+         shuffledWeights[i] = weight
 
          table.insert(inputs, input)
          table.insert(targets, target)
@@ -379,7 +376,7 @@ function train()
    log:write("time for entire batch: " .. tostring(time / 60.0) .. " min\n")
 
    -- we have values 0 and 1 as class labels
-   roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1)
+   roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1, shuffledWeights)
 
    local trainAUC = metrics.roc.area(roc_points)
    print("train AUC:", trainAUC)
@@ -458,7 +455,7 @@ function test()
    log:write("time to test 1 sample: " .. tostring(time*1000) .. ' ms\n')
    log:write("time for entire test batch: " .. tostring(time / 60.0) .. " min\n")
 
-   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1)
+   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1, testWeights)
    local testAUC = metrics.roc.area(roc_points)
    print("test AUC:", testAUC)
    print()
