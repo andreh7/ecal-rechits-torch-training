@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# reads an (old style) training log file and
+# plots the evolution of the AUCs (no weights used)
+# vs. training epoch
 
 import sys
 import re
