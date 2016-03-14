@@ -47,15 +47,21 @@ pylab.grid()
 pylab.xlabel('training epoch')
 pylab.ylabel('AUC')
 
-x0 = 0.05
-y0 = 0.95
+x0 = 0.95
+y0 = 0.5
 dy = -0.05
 
-pylab.text(x0, y0, 
-           'training time per epoch: %.1f min' % np.mean(epochTimes),
-           horizontalalignment='left',
-           verticalalignment='top',
-           transform = pylab.gca().transAxes)
+for text in [
+    'training time per epoch: %.1f min' % np.mean(epochTimes),
+    'sum of training times: %.1f days' % (np.sum(epochTimes) / (24 * 60.0), )
+    ]:
+
+    pylab.text(x0, y0, 
+               text,
+               horizontalalignment='right',
+               verticalalignment='top',
+               transform = pylab.gca().transAxes)
+    y0 += dy
 
 pylab.legend(loc = 'lower right')
 pylab.show()
