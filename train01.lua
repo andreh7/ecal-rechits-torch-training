@@ -36,7 +36,7 @@ poolsize = 2
 -- if one specifies values < 1 these are interpreted
 -- as fractions of the sample
 -- trsize, tesize = 10000, 1000
-trsize, tesize = 0.1, 0.1
+-- trsize, tesize = 0.1, 0.1
 
 
 
@@ -78,6 +78,8 @@ function loadDataset(fname, size)
      labels = loaded.y,
   
      weights = loaded.weight,
+
+     mvaid = loaded.mvaid,
   
      size = function() return size end
   }
@@ -89,11 +91,29 @@ function loadDataset(fname, size)
   data.weights:mul(data.weights:size()[1] / data.weights:sum())
 
   -- DEBUG: fix weights to one
-  data.weights = torch.Tensor(data.weights:size()[1]):fill(1):float()
+  --  data.weights = torch.Tensor(data.weights:size()[1]):fill(1):float()
  
   return data, size
 
 end -- function loadDataset
+
+----------------------------------------------------------------------
+
+-- writes out a table containing information to calculate
+-- a ROC curve
+function writeROCdata(relFname, targetValues, outputValues, weights)
+
+   local dataForRoc = {
+     label = targetValues,
+     output = outputValues,
+     weight = weights
+   }
+
+   torch.save(paths.concat(outputDir, relFname), dataForRoc)
+
+end -- function
+
+----------------------------------------------------------------------
 
 ----------
 -- parse command line arguments
@@ -117,6 +137,19 @@ log,err = io.open(paths.concat(outputDir, 'train.log'), "w")
 if log == nil then
   print("could not open log file",err)
 end
+
+----------
+-- write ROC data for mvaid
+----------
+writeROCdata('roc-data-train-mva.t7',
+             trainData.labels,
+             trainData.mvaid,
+             trainData.weights)
+
+writeROCdata('roc-data-test-mva.t7',
+             testData.labels,
+             testData.mvaid,
+             testData.weights)
 
 ----------------------------------------------------------------------
 -- model
@@ -186,9 +219,9 @@ model:add(nn.Linear(nstates[3], noutputs))
 -- we keep the target output at 0..1
 
 model:add(nn.Sigmoid())
-criterion = nn.BCECriterion(trainData.weights)
 
-criterion = nn.BCECriterion()
+batchWeights = torch.Tensor(batchSize)
+criterion = nn.BCECriterion(batchWeights)
 
 print('loss function:', criterion)
 log:write('loss function: ' .. tostring(criterion) .. "\n")
@@ -253,7 +286,11 @@ optimMethod = optim.sgd
 function train()
 
    -- epoch tracker
-   epoch = epoch or 1
+   epoch = epoch or 0
+
+   -- increase the epoch here (rather than at the end of training)
+   -- such that we have the same epoch number for training and testing
+   epoch = epoch + 1
 
    -- to measure the time needed for one training batch
    local startTime = sys.clock()
@@ -316,6 +353,11 @@ function train()
 
          table.insert(inputs, input)
          table.insert(targets, target)
+
+         -- copy weights into the weights variable
+         -- for the current batch
+         batchWeights[i - t + 1] = trainData.weights[i]
+
       end
 
       -- create closure to evaluate f(X) and df/dX
@@ -375,6 +417,14 @@ function train()
    log:write("time to learn 1 sample: " .. tostring(time / trainData:size() * 1000) .. ' ms\n')
    log:write("time for entire batch: " .. tostring(time / 60.0) .. " min\n")
 
+   -- write out network outputs, labels and weights
+   -- to a file so that we can calculate the ROC value with some other tool
+
+   writeROCdata('roc-data-train-' .. string.format("%04d", epoch) .. '.t7',
+                shuffledTargets,
+                trainOutput,
+                shuffledWeights)
+
    -- we have values 0 and 1 as class labels
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1, shuffledWeights)
 
@@ -390,9 +440,6 @@ function train()
 
    collectgarbage()
 
-   -- next epoch
-   epoch = epoch + 1
-
 end -- function train()
 
 ----------------------------------------
@@ -403,7 +450,11 @@ function test()
    -- local vars
    local startTime = sys.clock()
    local testOutput = torch.FloatTensor(tesize)
+
+   -- TODO: change naming: these are not shuffled but
+   --       a potential subtensor of the full set
    local shuffledTargets = torch.FloatTensor(tesize)
+   local shuffledWeights = torch.FloatTensor(tesize)
 
    -- averaged param use?
    if average then
@@ -431,6 +482,7 @@ function test()
       -- get new sample
       local input = testData.data[t]
       local target = testData.labels[t]
+      local weight = trainData.weights[t]
 
       -- test sample
       local pred = model:forward(input)
@@ -442,6 +494,7 @@ function test()
       target = torch.FloatTensor({target})
 
       shuffledTargets[t] = target[1]
+      shuffledWeights[t] = weight
    end
 
    -- timing
@@ -455,7 +508,14 @@ function test()
    log:write("time to test 1 sample: " .. tostring(time*1000) .. ' ms\n')
    log:write("time for entire test batch: " .. tostring(time / 60.0) .. " min\n")
 
-   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1, testWeights)
+   -- write out network outputs, labels and weights
+   -- to a file so that we can calculate the ROC value with some other tool
+   writeROCdata('roc-data-test-' .. string.format("%04d", epoch) .. '.t7',
+                shuffledTargets,                                      
+                testOutput,
+                shuffledWeights)
+
+   roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1, shuffledWeights)
    local testAUC = metrics.roc.area(roc_points)
    print("test AUC:", testAUC)
    print()
