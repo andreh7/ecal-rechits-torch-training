@@ -130,7 +130,9 @@ def readROCfiles(inputDir, transformation = None):
 
         print >> sys.stderr,"WARNING: unmatched filename",inputFname
 
-
+    # sort by increasing epochs
+    for sample in epochNumbers.keys():
+        epochNumbers[sample], rocValues[sample] = zip(*sorted(zip(epochNumbers[sample], rocValues[sample])))        
     
     return mvaROC, epochNumbers, rocValues
 
@@ -161,8 +163,8 @@ for sample, color in (
 
     assert len(epochNumbers[sample]) == len(rocValues[sample])
 
-    # sort by increasing epoch
-    epochs, aucs = zip(*sorted(zip(epochNumbers[sample], rocValues[sample])))
+    # these are already sorted by ascending epoch
+    epochs, aucs = epochNumbers[sample], rocValues[sample]
 
     pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
 
