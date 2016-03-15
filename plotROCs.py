@@ -18,6 +18,8 @@ import glob, re
 #----------------------------------------------------------------------
 
 def readROC(fname):
+    # reads a torch file and calculates the area under the ROC
+    # curve for it
 
     print "reading",fname
     
@@ -38,6 +40,37 @@ def readROC(fname):
     return aucValue
 
 #----------------------------------------------------------------------
+
+def readDescription(inputDir):
+    descriptionFile = os.path.join(inputDir, "samples.txt")
+
+    if os.path.exists(descriptionFile):
+
+        description = []
+
+        # assume that these are file names (of the training set)
+        fnames = open(descriptionFile).read().splitlines()
+
+        for fname in fnames:
+            if not fname:
+                continue
+
+            fname = os.path.basename(fname)
+            fname = os.path.splitext(fname)[0]
+
+            if fname.endswith("-train"):
+                fname = fname[:-6]
+            elif fname.endswith("-test"):
+                fname = fname[:-5]
+            description.append(fname)
+
+        return ", ".join(description)
+
+    else:
+        return None
+
+
+#----------------------------------------------------------------------
 # main
 #----------------------------------------------------------------------
 
@@ -49,32 +82,7 @@ inputDir = ARGV.pop(0)
 
 #----------
 
-descriptionFile = os.path.join(inputDir, "samples.txt")
-
-if os.path.exists(descriptionFile):
-
-    description = []
-
-    # assume that these are file names (of the training set)
-    fnames = open(descriptionFile).read().splitlines()
-
-    for fname in fnames:
-        if not fname:
-            continue
-
-        fname = os.path.basename(fname)
-        fname = os.path.splitext(fname)[0]
-
-        if fname.endswith("-train"):
-            fname = fname[:-6]
-        elif fname.endswith("-test"):
-            fname = fname[:-5]
-        description.append(fname)
-
-    description = ", ".join(description)
-    
-else:
-    description = None
+description = readDescription(inputDir)
 
 
 inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7"))
