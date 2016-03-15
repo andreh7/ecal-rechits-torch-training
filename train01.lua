@@ -16,8 +16,12 @@ metrics = require 'metrics';
 ----------------------------------------------------------------------
 
 -- TODO should use HT range 40-100 first
-train_file = '../torch-utils/gjet-ht-400-600-train.t7'
-test_file  = '../torch-utils/gjet-ht-400-600-test.t7'
+-- train_files = { '../torch-utils/gjet-ht-400-600-train.t7' }; test_files  = { '../torch-utils/gjet-ht-400-600-test.t7' }
+
+-- two highest weighted processes for m(gamma,gamma) = 80 .. 180 GeV
+train_files = { '../torch-utils/gjet-ht-40-100-train.t7', '../torch-utils/gjet-ht-100-200-train.t7' }
+test_files  = { '../torch-utils/gjet-ht-40-100-test.t7',  '../torch-utils/gjet-ht-100-200-test.t7' }
+
 
 -- input dimensions
 nfeats = 1
