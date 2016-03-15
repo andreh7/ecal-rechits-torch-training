@@ -137,10 +137,44 @@ def readROCfiles(inputDir, transformation = None):
     return mvaROC, epochNumbers, rocValues
 
 #----------------------------------------------------------------------
+
+def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
+
+    print "reading",inputFname
+    
+    fin = torchio.InputFile(inputFname, "binary")
+
+    data = fin.readObject()
+
+    weights = data['weight'].asndarray()
+    labels  = data['label'].asndarray()
+    outputs = data['output'].asndarray()
+
+    from sklearn.metrics import roc_curve, auc
+
+    fpr, tpr, dummy = roc_curve(labels, outputs, sample_weight = weights)
+
+    # TODO: we could add the area to the legend
+    pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label)
+
+#----------------------------------------------------------------------
 # main
 #----------------------------------------------------------------------
+from optparse import OptionParser
+parser = OptionParser("""
 
-ARGV = sys.argv[1:]
+  usage: %prog [options] result-directory
+
+"""
+)
+
+parser.add_option("--last",
+                  default = False,
+                  action="store_true",
+                  help="plot ROC curve for last epoch only",
+                  )
+
+(options, ARGV) = parser.parse_args()
 
 assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
 
@@ -150,35 +184,72 @@ inputDir = ARGV.pop(0)
 
 description = readDescription(inputDir)
 
-mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
-
 import pylab
 
-pylab.figure()
+if options.last:
+    # plot ROC curve for last epoch only
+    pylab.figure()
+    
+    # read only the file names
+    mvaROC, epochNumbers, rocFnames = readROCfiles(inputDir)
 
-for sample, color in (
-    ('train', 'blue'),
-    ('test', 'red'),
-    ):
+    for sample, color in (
+        ('train', 'blue'),
+        ('test', 'red'),
+        ):
+        
+        # take the last epoch
+        if not rocFnames[sample]:
+            print >> sys.stderr,"WARNING: no files found for", sample
+            continue
+        
+        drawSingleROCcurve(rocFnames[sample][-1], sample, color, '-', 2)
 
-    assert len(epochNumbers[sample]) == len(rocValues[sample])
+        # draw the ROC curve for the MVA id if available
+        fname = mvaROC[sample]
+        if fname != None:
+            drawSingleROCcurve(fname, "MVA " + sample, color, '--', 1)
 
-    # these are already sorted by ascending epoch
-    epochs, aucs = epochNumbers[sample], rocValues[sample]
 
-    pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
+    pylab.xlabel('fraction of fake photons')
+    pylab.ylabel('fraction of true photons')
 
-    # draw a line for the MVA id ROC if available
-    auc = mvaROC[sample]
-    if auc != None:
-        pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
-                    label = "MVA " + sample)
+    pylab.grid()
+    pylab.legend(loc = 'lower right')
 
-pylab.grid()
-pylab.xlabel('training epoch')
-pylab.ylabel('AUC')
 
-pylab.legend(loc = 'lower right')
+else:
+    # plot evolution of area under ROC curve vs. epoch
+
+    mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
+
+    pylab.figure()
+
+    for sample, color in (
+        ('train', 'blue'),
+        ('test', 'red'),
+        ):
+
+        assert len(epochNumbers[sample]) == len(rocValues[sample])
+
+        # these are already sorted by ascending epoch
+        epochs, aucs = epochNumbers[sample], rocValues[sample]
+
+        pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
+
+        # draw a line for the MVA id ROC if available
+        auc = mvaROC[sample]
+        if auc != None:
+            pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
+                        label = "MVA " + sample)
+
+    pylab.grid()
+    pylab.xlabel('training epoch')
+    pylab.ylabel('AUC')
+
+    pylab.legend(loc = 'lower right')
+
+#----------
 
 if description != None:
     pylab.title(description)
