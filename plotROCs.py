@@ -157,36 +157,11 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
     # TODO: we could add the area to the legend
     pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label)
 
+    return fpr, tpr
+
 #----------------------------------------------------------------------
-# main
-#----------------------------------------------------------------------
-from optparse import OptionParser
-parser = OptionParser("""
 
-  usage: %prog [options] result-directory
-
-"""
-)
-
-parser.add_option("--last",
-                  default = False,
-                  action="store_true",
-                  help="plot ROC curve for last epoch only",
-                  )
-
-(options, ARGV) = parser.parse_args()
-
-assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
-
-inputDir = ARGV.pop(0)
-
-#----------
-
-description = readDescription(inputDir)
-
-import pylab
-
-if options.last:
+def drawLast(inputDir, description, xmax = None):
     # plot ROC curve for last epoch only
     pylab.figure()
     
@@ -217,6 +192,18 @@ if options.last:
 
     epochNumber = findLastCompleteEpoch()
 
+    highestTPRs = []
+
+    #----------
+    def updateHighestTPR(fpr, tpr, maxfpr):
+        if maxfpr == None:
+            return
+
+        # find highest TPR for which the FPR is <= maxfpr
+        highestTPR = max([ thisTPR for thisTPR, thisFPR in zip(tpr, fpr) if thisFPR <= maxfpr])
+        highestTPRs.append(highestTPR)
+    #----------
+
     for sample, color in (
         ('train', 'blue'),
         ('test', 'red'),
@@ -224,19 +211,75 @@ if options.last:
         
         # take the last epoch
         if epochNumber != None:
-            drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample, color, '-', 2)
+            fpr, tpr = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample, color, '-', 2)
+            updateHighestTPR(fpr, tpr, xmax)
+            
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            drawSingleROCcurve(fname, "MVA " + sample, color, '--', 1)
+            fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample, color, '--', 1)
+            updateHighestTPR(fpr, tpr, xmax)            
+
 
 
     pylab.xlabel('fraction of fake photons')
     pylab.ylabel('fraction of true photons')
 
+    if xmax != None:
+        pylab.xlim(xmax = xmax)
+        # adjust y scale
+        pylab.ylim(ymax = 1.1 * max(highestTPRs))
+
     pylab.grid()
     pylab.legend(loc = 'lower right')
+    
+    if description != None:
+
+        if epochNumber != None:
+            description += " (epoch %d)" % epochNumber
+
+        pylab.title(description)
+
+
+#----------------------------------------------------------------------
+# main
+#----------------------------------------------------------------------
+from optparse import OptionParser
+parser = OptionParser("""
+
+  usage: %prog [options] result-directory
+
+"""
+)
+
+parser.add_option("--last",
+                  default = False,
+                  action="store_true",
+                  help="plot ROC curve for last epoch only",
+                  )
+
+(options, ARGV) = parser.parse_args()
+
+assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
+
+inputDir = ARGV.pop(0)
+
+#----------
+
+description = readDescription(inputDir)
+
+import pylab
+
+if options.last:
+
+    drawLast(inputDir, description)
+
+    # zoomed version
+    # autoscaling in y with x axis range manually
+    # set seems not to work, so we implement
+    # something ourselves..
+    drawLast(inputDir, description, xmax = 0.05)
 
 
 else:
@@ -270,10 +313,12 @@ else:
 
     pylab.legend(loc = 'lower right')
 
+    if description != None:
+        pylab.title(description)
+
+
 #----------
 
-if description != None:
-    pylab.title(description)
 
 pylab.show()
 
