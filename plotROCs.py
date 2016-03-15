@@ -49,11 +49,29 @@ inputDir = ARGV.pop(0)
 
 #----------
 
-descriptionFile = os.path.join(inputDir, "sample.txt")
+descriptionFile = os.path.join(inputDir, "samples.txt")
 
 if os.path.exists(descriptionFile):
-    description = open(descriptionFile).read()
-    description = re.sub('\s+',' ', description)
+
+    description = []
+
+    # assume that these are file names (of the training set)
+    fnames = open(descriptionFile).read().splitlines()
+
+    for fname in fnames:
+        if not fname:
+            continue
+
+        fname = os.path.basename(fname)
+        fname = os.path.splitext(fname)[0]
+
+        if fname.endswith("-train"):
+            fname = fname[:-6]
+        elif fname.endswith("-test"):
+            fname = fname[:-5]
+        description.append(fname)
+
+    description = ", ".join(description)
     
 else:
     description = None
