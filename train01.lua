@@ -184,6 +184,16 @@ writeROCdata('roc-data-test-mva.t7',
              testData.mvaid,
              testData.weights)
 
+----------
+-- write training samples 
+----------
+
+fout = io.open(paths.concat(outputDir, 'samples.txt'), "w")
+for i = 1, #train_files do
+  fout:write(train_files[i] .. "\n")
+end
+fout:close()
+
 ----------------------------------------------------------------------
 -- model
 ----------------------------------------------------------------------
