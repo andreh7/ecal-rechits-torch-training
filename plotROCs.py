@@ -193,17 +193,38 @@ if options.last:
     # read only the file names
     mvaROC, epochNumbers, rocFnames = readROCfiles(inputDir)
 
+    #----------
+
+    def findLastCompleteEpoch():
+        if not epochNumbers['train']:
+            print >> sys.stderr,"WARNING: no training files found"
+            return None
+
+        if not epochNumbers['test']:
+            print >> sys.stderr,"WARNING: no test files found"
+            return None
+
+        for sample in ('train','test'):
+            assert epochNumbers[sample][0] == 1
+            assert len(epochNumbers[sample]) == epochNumbers[sample][-1]
+
+        return min(epochNumbers['train'][-1], epochNumbers['test'][-1])
+
+    #----------
+
+    # find the highest epoch for which both
+    # train and test samples are available
+
+    epochNumber = findLastCompleteEpoch()
+
     for sample, color in (
         ('train', 'blue'),
         ('test', 'red'),
         ):
         
         # take the last epoch
-        if not rocFnames[sample]:
-            print >> sys.stderr,"WARNING: no files found for", sample
-            continue
-        
-        drawSingleROCcurve(rocFnames[sample][-1], sample, color, '-', 2)
+        if epochNumber != None:
+            drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample, color, '-', 2)
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
