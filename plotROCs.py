@@ -69,6 +69,70 @@ def readDescription(inputDir):
     else:
         return None
 
+#----------------------------------------------------------------------
+
+def readROCfiles(inputDir, transformation = None):
+    # returns mvaROC, epochNumbers, rocValues
+    # which are dicts of 'test'/'train' to the single value
+    # (for MVAid) or a list of values (epochNumbers and rocValues)
+    #
+    # transformation is a function taking the file name 
+    # which is run on each file
+    # found and stored in the return values. If None,
+    # just the name is stored.
+
+    if transformation == None:
+        transformation = lambda fname: fname
+
+    #----------
+    inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7"))
+
+    # ROCs values and epoch numbers for training and test
+    rocValues    = dict(train = [], test = [])
+    epochNumbers = dict(train = [], test = [])
+
+    # MVA id ROC areas
+    mvaROC = dict(train = None, test = None)
+
+    for inputFname in inputFiles:
+
+        basename = os.path.basename(inputFname)
+
+        # example names:
+        #  roc-data-test-mva.t7
+        #  roc-data-train-0002.t7
+
+        mo = re.match("roc-data-(\S+)-mva\.t7$", basename)
+
+        if mo:
+            sampleType = mo.group(1)
+
+            assert mvaROC.has_key(sampleType)
+            assert mvaROC[sampleType] == None
+
+            mvaROC[sampleType] = transformation(inputFname)
+
+            continue
+
+        mo = re.match("roc-data-(\S+)-(\d+)\.t7$", basename)
+
+        if mo:
+            sampleType = mo.group(1)
+            epoch = int(mo.group(2), 10)
+
+            assert epochNumbers.has_key(sampleType)
+            assert not epoch in epochNumbers[sampleType]
+
+            rocValues[sampleType].append(transformation(inputFname))
+            epochNumbers[sampleType].append(epoch)
+            continue
+
+
+        print >> sys.stderr,"WARNING: unmatched filename",inputFname
+
+
+    
+    return mvaROC, epochNumbers, rocValues
 
 #----------------------------------------------------------------------
 # main
@@ -84,51 +148,7 @@ inputDir = ARGV.pop(0)
 
 description = readDescription(inputDir)
 
-
-inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7"))
-
-# ROCs values and epoch numbers for training and test
-rocValues    = dict(train = [], test = [])
-epochNumbers = dict(train = [], test = [])
-
-# MVA id ROC areas
-mvaROC = dict(train = None, test = None)
-
-for inputFname in inputFiles:
-
-    basename = os.path.basename(inputFname)
-
-    # example names:
-    #  roc-data-test-mva.t7
-    #  roc-data-train-0002.t7
-
-    mo = re.match("roc-data-(\S+)-mva\.t7$", basename)
-
-    if mo:
-        sampleType = mo.group(1)
-
-        assert mvaROC.has_key(sampleType)
-        assert mvaROC[sampleType] == None
-
-        mvaROC[sampleType] = readROC(inputFname)
-
-        continue
-
-    mo = re.match("roc-data-(\S+)-(\d+)\.t7$", basename)
-
-    if mo:
-        sampleType = mo.group(1)
-        epoch = int(mo.group(2), 10)
-
-        assert epochNumbers.has_key(sampleType)
-        assert not epoch in epochNumbers[sampleType]
-
-        rocValues[sampleType].append(readROC(inputFname))
-        epochNumbers[sampleType].append(epoch)
-        continue
-        
-
-    print >> sys.stderr,"WARNING: unmatched filename",inputFname
+mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
 
 import pylab
 
