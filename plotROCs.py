@@ -17,6 +17,39 @@ import glob, re
 
 #----------------------------------------------------------------------
 
+def addTimestamp(x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
+
+    import pylab, time
+
+    # static variable
+    if not hasattr(addTimestamp, 'text'):
+        # make all timestamps the same during one invocation of this script
+        addTimestamp.text = time.strftime("%a %d %b %Y %H:%M")
+
+    pylab.gca().text(x, y, addTimestamp.text,
+                     horizontalalignment = ha,
+                     verticalalignment = va,
+                     transform = pylab.gca().transAxes,
+                     # color='green', 
+                     fontsize = 10,
+                     )
+#----------------------------------------------------------------------
+
+    
+def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
+
+    import pylab
+    pylab.gca().text(x, y, inputDir,
+                     horizontalalignment = ha,
+                     verticalalignment = va,
+                     transform = pylab.gca().transAxes,
+                     # color='green', 
+                     fontsize = 10,
+                     )
+
+
+#----------------------------------------------------------------------
+
 def readROC(fname):
     # reads a torch file and calculates the area under the ROC
     # curve for it
@@ -233,7 +266,10 @@ def drawLast(inputDir, description, xmax = None):
 
     pylab.grid()
     pylab.legend(loc = 'lower right')
-    
+
+    addTimestamp()
+    addDirname(inputDir)
+
     if description != None:
 
         if epochNumber != None:
@@ -316,6 +352,8 @@ else:
     if description != None:
         pylab.title(description)
 
+    addTimestamp()
+    addDirname(inputDir)
 
 #----------
 
