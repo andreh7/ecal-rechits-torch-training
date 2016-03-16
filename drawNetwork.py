@@ -84,11 +84,20 @@ class NetworkDrawer:
         #       the overall figure fits
 
         self.dz = np.array([-0.1, 0.1])
+
+        #----------
+
+        # by how much the position is changed from
+        # one data layer to the next
+        self.advanceHorizontal = np.array([
+            self.layerGridWidth + self.betweenLayersSpaceHorizontal,
+            0])
         
     #----------------------------------------
 
     def __advancePos(self):
-        self.pos[0] += (self.layerGridWidth + self.betweenLayersSpaceHorizontal)
+
+        self.pos += self.advanceHorizontal
 
     #----------------------------------------
         
@@ -145,8 +154,12 @@ class NetworkDrawer:
 
     #----------------------------------------
 
-    def __drawDataShapeLayer(self, layer):
-        numPlanes = min(self.maxPlanesToDraw, layer.numPlanes)
+    def __getPlanecenters(self, numPlanes):
+        # returns an array of numpy 2D arrays (coordinates)
+        # relative to (0,0)
+        # 
+        # the position with the highest z is first
+        # (so that this is in drawing order)
 
         # center the different data planes
         if numPlanes % 2 == 0:
@@ -157,6 +170,18 @@ class NetworkDrawer:
             zmid = numPlanes / 2
 
         zCenters = np.arange(numPlanes) - zmid
+
+        return [
+            z * self.dz
+            for z in zCenters[::-1]
+            ]
+        
+    #----------------------------------------
+
+    def __drawDataShapeLayer(self, layer):
+        numPlanes = min(self.maxPlanesToDraw, layer.numPlanes)
+
+        zCenters = self.__getPlanecenters(numPlanes)
 
         # draw those at the highest z depth first
         # so that they are covered by the ones
@@ -171,10 +196,10 @@ class NetworkDrawer:
             pyx.color.grey(0.5),
             ]
                 
-        for index, z in enumerate(zCenters[::-1]):
+        for index, centerPos in enumerate(zCenters):
 
             # center of the rectangle
-            centerPos = self.pos + z * self.dz
+            centerPos += self.pos
 
             left = centerPos[0] - halfWidth
             right = centerPos[0] + halfWidth
@@ -216,7 +241,7 @@ class NetworkDrawer:
 
     #----------------------------------------
 
-    def __drawOperationLayer(self, layer):
+    def __drawOperationLayerDescription(self, layer):
 
         #----------
         # put the description between the data layers
@@ -236,14 +261,88 @@ class NetworkDrawer:
                 y -= self.descriptionTextVerticalSpacing
 
 
-                  
+    #----------------------------------------
+
+    def __drawOperationLayerKernel(self, layerIndex):
+
+        operationLayer = self.layers[layerIndex]
+        kernelSize = operationLayer.kernelSize
+        if not kernelSize:
+            return
+
+        leftDataLayer = self.layers[layerIndex - 1]
+        rightDataLayer = self.layers[layerIndex + 1]
+
+        numPlanesLeft  = min(self.maxPlanesToDraw, leftDataLayer.numPlanes)
+        numPlanesRight = min(self.maxPlanesToDraw, rightDataLayer.numPlanes)
+
+        # find the center of the front most
+        # layer of this and the next layer
+        leftCenter  = self.__getPlanecenters(numPlanesLeft)[-1] + self.pos
+        rightCenter = self.__getPlanecenters(numPlanesRight)[-1] + self.pos + self.advanceHorizontal
+
+        # source: for the moment, put the kernel
+        # window into the bottom left corner
+        # shifted away by one pixel
+        # from the corner
+
+        left   = leftCenter[0] + (- leftDataLayer.width / 2.0 + 1) * self.pixelSize
+        right  = leftCenter[0] + (- leftDataLayer.width / 2.0 + 1 + kernelSize[0]) * self.pixelSize
+
+        top    = leftCenter[1] + (- leftDataLayer.height / 2.0 + 1) * self.pixelSize
+        bottom = leftCenter[1] + (- leftDataLayer.height / 2.0 + 1 + kernelSize[1]) * self.pixelSize
+
+        path = pyx.path.path(
+            pyx.path.moveto(left, top),
+            pyx.path.lineto(right, top),
+            pyx.path.lineto(right, bottom),
+            pyx.path.lineto(left, bottom),
+            pyx.path.closepath())
+
+        self.canvas.stroke(path)
+
+        if True:
+            # draw lines from each of the four corners of the source
+            # kernel window to the center of the output layer
+            for source in (
+               #  [ left, top ],
+               [ right, top ],
+
+                [ left, bottom ],
+                # [ right, bottom ],
+                ):
+                path = pyx.path.path(
+                    pyx.path.moveto(source[0], source[1]),
+                    pyx.path.lineto(rightCenter[0], rightCenter[1]),
+                    pyx.path.closepath())
+
+                self.canvas.stroke(path)
+
+        if False:
+            # draw line from the center of the source window
+            # to the center of the destination plane
+
+            path = pyx.path.path(
+                    pyx.path.moveto(0.5 * (left + right), 0.5 * (top + bottom)),
+                    pyx.path.lineto(rightCenter[0], rightCenter[1]),
+                    pyx.path.closepath())
+            
+            self.canvas.stroke(path)
+        
+        
+    
+    #----------------------------------------
+
+    def __resetDrawingPosition(self):
+        # initial position
+        self.pos = np.array([0., 0.])
+
     #----------------------------------------
 
     def draw(self):
         # calculate sizes of planes and draw all components
 
-        # initial position
-        self.pos = np.array([0., 0.])
+        self.__resetDrawingPosition()
 
         # find the maximum number of pixels to be represented
         # in each direction
@@ -262,13 +361,32 @@ class NetworkDrawer:
                 self.__drawDataShapeLayer(layer)
 
             elif isinstance(layer, OperationLayer):
-                self.__drawOperationLayer(layer)
+                self.__drawOperationLayerDescription(layer)
                 
                 self.__advancePos()
 
             else:
                 raise Exception("internal error")
         # end of loop over layers
+
+        #----------
+        # draw kernels after drawing all layers
+        #----------
+        
+        self.__resetDrawingPosition()
+
+        for layerIndex, layer in enumerate(self.layers):
+            if isinstance(layer, DataShapeLayer):
+                continue
+
+            elif isinstance(layer, OperationLayer):
+                self.__drawOperationLayerKernel(layerIndex)
+                self.__advancePos()
+            else:
+                raise Exception("internal error")
+        # end of loop over layers
+
+        
         
 #----------------------------------------------------------------------
 # main
