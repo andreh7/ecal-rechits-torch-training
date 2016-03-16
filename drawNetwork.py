@@ -30,6 +30,17 @@ class DataShapeLayer:
         self.height      = heightInPixels
         self.description = description
 
+class OperationLayer:
+    # corresponds to the operation
+    # between two data layers
+
+    def __init__(self, description, kernelSize):
+        # description must be a list of strings
+        # kernelSize must be None or (width, height)
+
+        self.description = description
+        self.kernelSize = kernelSize
+
 #----------------------------------------------------------------------    
     
 class NetworkDrawer:
@@ -51,6 +62,10 @@ class NetworkDrawer:
         # symbol drawing and first line
         # of description
         self.topDescriptionVerticalOffset = 3.0
+
+        # same for below the drawings description
+        self.bottomDescriptionVerticalOffset = 3.0
+
         self.descriptionTextVerticalSpacing = 0.4
 
         # limit on the number of parallel planes
@@ -89,6 +104,11 @@ class NetworkDrawer:
         # description should be a string or a list of strings if
         # multiple lines should be shown
 
+
+        # make sure this is either the input
+        # or the previous layer was a operation layer
+        assert len(self.layers) == 0 or isinstance(self.layers[-1], OperationLayer)
+
         if description == None:
             description = []
         elif isinstance(description, str):
@@ -101,6 +121,27 @@ class NetworkDrawer:
             description.append("%d @ %d x %d" % (numPlanes, width, height))
 
         self.layers.append(DataShapeLayer(numPlanes, width, height, description))
+
+    #----------------------------------------
+
+    def addOperationLayer(self, description, kernelSize = None):
+        # kernelSize must be (height, width) or None
+        # 
+        # description should either be a string or a list of strings
+       
+        # make sure the previous layer is a data layer
+        assert len(self.layers) > 0 and isinstance(self.layers[-1], DataShapeLayer)
+
+        
+        if description == None:
+            description = []
+        elif isinstance(description, str):
+            description = [ description ]
+
+        if kernelSize != None:
+            description.append("%dx%d kernel" % (kernelSize[0], kernelSize[1]))
+
+        self.layers.append(OperationLayer(description, kernelSize))
 
     #----------------------------------------
 
@@ -172,6 +213,29 @@ class NetworkDrawer:
 
                     y += self.descriptionTextVerticalSpacing
 
+
+    #----------------------------------------
+
+    def __drawOperationLayer(self, layer):
+
+        #----------
+        # put the description between the data layers
+        # below the drawings
+        #----------
+
+        if layer.description:
+
+            # starting position
+            x = self.pos[0] + (self.layerGridWidth + self.betweenLayersSpaceHorizontal) / 2.0
+            y = self.pos[1] - self.layerGridHeight / 2.0 - self.bottomDescriptionVerticalOffset / 2.0
+
+            for line in layer.description:
+
+                self.canvas.text(x, y, line, [pyx.text.halign.boxcenter])
+
+                y -= self.descriptionTextVerticalSpacing
+
+
                   
     #----------------------------------------
 
@@ -196,10 +260,15 @@ class NetworkDrawer:
         for layer in self.layers:
             if isinstance(layer, DataShapeLayer):
                 self.__drawDataShapeLayer(layer)
+
+            elif isinstance(layer, OperationLayer):
+                self.__drawOperationLayer(layer)
+                
                 self.__advancePos()
 
-            
-        
+            else:
+                raise Exception("internal error")
+        # end of loop over layers
         
 #----------------------------------------------------------------------
 # main
@@ -252,6 +321,62 @@ drawer.addDataLayer(inputSize[0], inputSize[1], inputSize[2], 'input')
 for layerIndex, layer in enumerate(layers):
     print "layer",layerIndex,layer.__class__
 
+    #----------
+    # add an operation layer
+    #----------
+
+    description = []
+    kernelSize = None
+    knownType = True
+    
+    if isinstance(layer, torchio.nn.SpatialConvolutionMM):
+        kernelSize = (layer.kW, layer.kH)
+        description = ["convolution"]
+
+    elif isinstance(layer, torchio.nn.SpatialMaxPooling):
+
+        kernelSize = (layer.kW, layer.kH)
+        description = ["max pooling"]
+
+    elif isinstance(layer, torchio.nn.Sigmoid):
+        description = ["sigmoid"]
+
+    elif isinstance(layer, torchio.nn.ReLU):
+        description = ["ReLU"]
+
+    elif isinstance(layer, torchio.nn.View):
+        description = ["view"]
+
+    elif isinstance(layer, torchio.nn.Linear):
+        description = ["linear"]
+
+    elif isinstance(layer, torchio.nn.Dropout):
+        description = ["dropout"]
+        description.append("p=%.2f" % layer.p)
+
+    else:
+        knownType = False
+        print >> sys.stderr,"WARNING: unsupported layer type (operation):",layer.__class__
+
+    if knownType:
+        if hasattr(layer, 'weight'):
+            description.append(' x '.join([str(x) for x in layer.weight.size]) + " weights")
+
+        if hasattr(layer, 'bias'):
+            description.append(' x '.join([str(x) for x in layer.bias.size]) + " biases")
+
+        drawer.addOperationLayer(description,
+                                 kernelSize = kernelSize,
+                                 )
+
+    else:
+        drawer.addOperationLayer(None)
+    
+
+    #----------
+    # data shape at output of this operation
+    #----------
+
     # TODO: from the network itself we can't infer the 
     #       shape of the input data
 
@@ -277,26 +402,26 @@ for layerIndex, layer in enumerate(layers):
         # field to be present (which is probably only there
         # after some training ?!)
 
-        description = None
+        description = []
         if layerIndex == len(layers) - 1:
-            description = "output"
+            description.append("output")
 
         elif outputSize[1] == 1 and outputSize[2] == 1:
-            description = "hidden layer"
+            description.append("hidden layer")
         else:
-            description = "feature maps"
-
+            description.append("feature maps")
 
         drawer.addDataLayer(outputSize[0],
                             outputSize[1],
                             outputSize[2],
                             description,
                             )
-        continue
+
+
         
 
     else:
-        print >> sys.stderr,"WARNING: unsupported layer type:",layer.__class__
+        print >> sys.stderr,"WARNING: unsupported layer type (output data):",layer.__class__
 
 #----------
 
