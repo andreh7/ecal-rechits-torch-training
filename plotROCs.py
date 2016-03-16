@@ -39,6 +39,10 @@ def addTimestamp(x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
 def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
 
     import pylab
+
+    if inputDir.endswith('/'):
+        inputDir = inputDir[:-1]
+
     pylab.gca().text(x, y, inputDir,
                      horizontalalignment = ha,
                      verticalalignment = va,
@@ -196,7 +200,7 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
 def drawLast(inputDir, description, xmax = None):
     # plot ROC curve for last epoch only
-    pylab.figure()
+    pylab.figure(facecolor='white')
     
     # read only the file names
     mvaROC, epochNumbers, rocFnames = readROCfiles(inputDir)
@@ -323,7 +327,7 @@ else:
 
     mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
 
-    pylab.figure()
+    pylab.figure(facecolor='white')
 
     for sample, color in (
         ('train', 'blue'),
