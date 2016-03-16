@@ -34,9 +34,12 @@ class OperationLayer:
     # corresponds to the operation
     # between two data layers
 
-    def __init__(self, description, kernelSize):
+    def __init__(self, operation, description, kernelSize):
         # description must be a list of strings
         # kernelSize must be None or (width, height)
+
+        # the original layer object
+        self.operation = operation
 
         self.description = description
         self.kernelSize = kernelSize
@@ -133,7 +136,7 @@ class NetworkDrawer:
 
     #----------------------------------------
 
-    def addOperationLayer(self, description, kernelSize = None):
+    def addOperationLayer(self, operation, description, kernelSize = None):
         # kernelSize must be (height, width) or None
         # 
         # description should either be a string or a list of strings
@@ -150,7 +153,7 @@ class NetworkDrawer:
         if kernelSize != None:
             description.append("%dx%d kernel" % (kernelSize[0], kernelSize[1]))
 
-        self.layers.append(OperationLayer(description, kernelSize))
+        self.layers.append(OperationLayer(operation, description, kernelSize))
 
     #----------------------------------------
 
@@ -264,11 +267,12 @@ class NetworkDrawer:
     #----------------------------------------
 
     def __drawOperationLayerKernel(self, layerIndex):
+        # returns False is nothing was drawn
 
         operationLayer = self.layers[layerIndex]
         kernelSize = operationLayer.kernelSize
         if not kernelSize:
-            return
+            return False
 
         leftDataLayer = self.layers[layerIndex - 1]
         rightDataLayer = self.layers[layerIndex + 1]
@@ -301,6 +305,10 @@ class NetworkDrawer:
 
         self.canvas.stroke(path)
 
+        # TODO: instead of drawing to just one point
+        # in the destination we could also draw to one
+        # square corresponding to one pixel
+
         if True:
             # draw lines from each of the four corners of the source
             # kernel window to the center of the output layer
@@ -328,7 +336,37 @@ class NetworkDrawer:
                     pyx.path.closepath())
             
             self.canvas.stroke(path)
-        
+
+        return True
+
+    #----------------------------------------
+    def __drawOperationLayerSimpleConnections(self, layerIndex):        
+
+        # THIS IS NOT IMPLEMENTED YET BECAUSE WE NEED TO DRAW THINGS
+        # IN THE RIGHT Z ORDER !!!
+        return
+
+        operationLayer = self.layers[layerIndex]
+
+        inputLayer  = self.layers[layerIndex - 1]
+        outputLayer = self.layers[layerIndex + 1]
+
+        numPlanesLeft  = min(self.maxPlanesToDraw, inputLayer.numPlanes)
+        numPlanesRight = min(self.maxPlanesToDraw, outputLayer.numPlanes)
+
+        leftCenter  = self.__getPlanecenters(numPlanesLeft)[-1] + self.pos
+        rightCenter = self.__getPlanecenters(numPlanesRight)[-1] + self.pos + self.advanceHorizontal
+
+
+        def drawLine(planeLeft):
+            pass
+
+        # special treatment for some layer types
+        if isinstance(layer.operation, torchio.nn.Linear):
+            # assume a fully connected layer
+            pass
+    
+            
         
     
     #----------------------------------------
@@ -380,7 +418,11 @@ class NetworkDrawer:
                 continue
 
             elif isinstance(layer, OperationLayer):
-                self.__drawOperationLayerKernel(layerIndex)
+                somethingDrawn = self.__drawOperationLayerKernel(layerIndex)
+
+                if not somethingDrawn:
+                    self.__drawOperationLayerSimpleConnections(layerIndex)
+
                 self.__advancePos()
             else:
                 raise Exception("internal error")
@@ -483,7 +525,8 @@ for layerIndex, layer in enumerate(layers):
         if hasattr(layer, 'bias'):
             description.append(' x '.join([str(x) for x in layer.bias.size]) + " biases")
 
-        drawer.addOperationLayer(description,
+        drawer.addOperationLayer(layer,
+                                 description,
                                  kernelSize = kernelSize,
                                  )
 
@@ -545,4 +588,4 @@ for layerIndex, layer in enumerate(layers):
 
 drawer.draw()
         
-drawer.canvas.writeGSfile("/tmp/test.png", resolution = 300)
+drawer.canvas.writeGSfile("/tmp/nn.png", resolution = 300)
