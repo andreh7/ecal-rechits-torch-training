@@ -17,14 +17,31 @@ import glob, re
 
 #----------------------------------------------------------------------
 
-def addTimestamp(x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
+def addTimestamp(inputDir, x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
 
     import pylab, time
+
 
     # static variable
     if not hasattr(addTimestamp, 'text'):
         # make all timestamps the same during one invocation of this script
-        addTimestamp.text = time.strftime("%a %d %b %Y %H:%M")
+
+        now = time.time()
+
+        addTimestamp.text = time.strftime("%a %d %b %Y %H:%M", time.localtime(now))
+
+        # use the timestamp of the samples.txt file
+        # as the starting point of the training
+        # to determine the wall clock time elapsed
+        # for the training
+
+        fname = os.path.join(inputDir, "samples.txt")
+        if os.path.exists(fname):
+            startTime = os.path.getmtime(fname)
+            deltaT = now - startTime
+
+            addTimestamp.text += " (%.1f days)" % (deltaT / 86400.)
+
 
     pylab.gca().text(x, y, addTimestamp.text,
                      horizontalalignment = ha,
@@ -271,7 +288,7 @@ def drawLast(inputDir, description, xmax = None):
     pylab.grid()
     pylab.legend(loc = 'lower right')
 
-    addTimestamp()
+    addTimestamp(inputDir)
     addDirname(inputDir)
 
     if description != None:
@@ -356,7 +373,7 @@ else:
     if description != None:
         pylab.title(description)
 
-    addTimestamp()
+    addTimestamp(inputDir)
     addDirname(inputDir)
 
 #----------
