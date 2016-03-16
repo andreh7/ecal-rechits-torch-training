@@ -23,11 +23,12 @@ import numpy as np
 class DataShapeLayer:
     # represents a data layer between the operations
 
-    def __init__(self, numPlanes, widthInPixels, heightInPixels):
+    def __init__(self, numPlanes, widthInPixels, heightInPixels, description):
 
-        self.numPlanes = numPlanes
-        self.width     = widthInPixels
-        self.height    = heightInPixels
+        self.numPlanes   = numPlanes
+        self.width       = widthInPixels
+        self.height      = heightInPixels
+        self.description = description
 
 #----------------------------------------------------------------------    
     
@@ -40,11 +41,17 @@ class NetworkDrawer:
     def __init__(self, canvas):
         self.canvas = canvas
 
-        self.betweenLayersSpaceHorizontal = 1.
+        self.betweenLayersSpaceHorizontal = 0.5
 
         # space we use for each data layer
         self.layerGridWidth = 3.
         self.layerGridHeight = 3.
+
+        # space between nominal top of
+        # symbol drawing and first line
+        # of description
+        self.topDescriptionVerticalOffset = 3.0
+        self.descriptionTextVerticalSpacing = 0.4
 
         # limit on the number of parallel planes
         # drawn
@@ -76,9 +83,24 @@ class NetworkDrawer:
 
     #----------------------------------------
 
-    def addDataLayer(self, numPlanes, width, height):
+    def addDataLayer(self, numPlanes, width, height, description = None):
         # width and height are in pixels
-        self.layers.append(DataShapeLayer(numPlanes, width, height))
+        # 
+        # description should be a string or a list of strings if
+        # multiple lines should be shown
+
+        if description == None:
+            description = []
+        elif isinstance(description, str):
+            description = [ description ]
+
+        # add size information
+        if width == 1 and height == 1:
+            description.append("%d" % numPlanes)
+        else:
+            description.append("%d @ %d x %d" % (numPlanes, width, height))
+
+        self.layers.append(DataShapeLayer(numPlanes, width, height, description))
 
     #----------------------------------------
 
@@ -134,6 +156,21 @@ class NetworkDrawer:
             else:
                 self.canvas.stroke(path)
 
+            #----------
+            # draw the description text above the layer
+            #----------
+            if layer.description:
+
+                # starting position
+                x = self.pos[0]
+                y = self.pos[1] + self.layerGridHeight / 2.0 + self.topDescriptionVerticalOffset / 2.0
+
+                for line in layer.description[::-1]:
+
+                    self.canvas.text(x, y, line, [pyx.text.halign.boxcenter])
+
+
+                    y += self.descriptionTextVerticalSpacing
 
                   
     #----------------------------------------
@@ -210,7 +247,7 @@ canvas = pyx.canvas.canvas()
 
 drawer = NetworkDrawer(canvas)
 
-drawer.addDataLayer(inputSize[0], inputSize[1], inputSize[2])
+drawer.addDataLayer(inputSize[0], inputSize[1], inputSize[2], 'input')
 
 for layerIndex, layer in enumerate(layers):
     print "layer",layerIndex,layer.__class__
@@ -240,9 +277,20 @@ for layerIndex, layer in enumerate(layers):
         # field to be present (which is probably only there
         # after some training ?!)
 
+        description = None
+        if layerIndex == len(layers) - 1:
+            description = "output"
+
+        elif outputSize[1] == 1 and outputSize[2] == 1:
+            description = "hidden layer"
+        else:
+            description = "feature maps"
+
+
         drawer.addDataLayer(outputSize[0],
                             outputSize[1],
                             outputSize[2],
+                            description,
                             )
         continue
         
@@ -254,4 +302,4 @@ for layerIndex, layer in enumerate(layers):
 
 drawer.draw()
         
-drawer.canvas.writeGSfile("/tmp/test.png")
+drawer.canvas.writeGSfile("/tmp/test.png", resolution = 300)
