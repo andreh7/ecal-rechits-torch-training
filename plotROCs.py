@@ -331,6 +331,12 @@ parser.add_option("--last",
                   help="plot ROC curve for last epoch only",
                   )
 
+parser.add_option("--both",
+                  default = False,
+                  action="store_true",
+                  help="plot AUC evolution and last AUC curve",
+                  )
+
 (options, ARGV) = parser.parse_args()
 
 assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
@@ -343,7 +349,7 @@ description = readDescription(inputDir)
 
 import pylab
 
-if options.last:
+if options.last or options.both:
 
     drawLast(inputDir, description)
 
@@ -354,7 +360,7 @@ if options.last:
     drawLast(inputDir, description, xmax = 0.05)
 
 
-else:
+if not options.last or options.both:
     # plot evolution of area under ROC curve vs. epoch
 
     mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
