@@ -28,22 +28,26 @@ maxEpochNumber = plotROCs.findLastCompleteEpoch(epochNumbers)
 # for the moment, just draw all ROC curves and adjust the maximum y scale afterards
 # (beware the high number of windows opened...)
 
-figures = []
+# maps from epoch number to figure
+figures = {}
 highestTPRs = []
 
 xmax = 0.05
 
 import pylab
 
-for epochNumber in range(1, maxEpochNumber+1):
+#----------
 
-    print "epoch=",epochNumber + 1
+def makeFigure(epochNumber, ymax = None):
+    # we make the figures on demand in order
+    # not to exhaust memory
+
+    print "epoch=",epochNumber
 
     # if epochNumber > 10:
     #     break
 
     fig = plt.figure(facecolor="white")
-    figures.append(fig)
 
     for sample, color in (
         ('train', 'blue'),
@@ -70,38 +74,56 @@ for epochNumber in range(1, maxEpochNumber+1):
     pylab.grid()
     pylab.legend(loc = 'lower right')
 
-
-# end of loop over epochs
-
-# update the x and y ranges
-if xmax != None:
-    for fig in figures:
-        # switch to the figure
-        plt.figure(fig.number)
-
+    if xmax != None:
         pylab.xlim(xmax = xmax)
-        # adjust y scale
-        pylab.ylim(ymax = 1.1 * max(highestTPRs))
+
+    if ymax != None:
+        # adjust y scale        
+        pylab.ylim(ymax = ymax)
+
+    return fig
 
 #----------
 
-lastFigNumber = None
+# find the maximum y range if x is restricted
+ymax = None
+if xmax != None:
+    
+    # assume that the highest epoch has the highest y limit
+    figures[maxEpochNumber] = makeFigure(maxEpochNumber)
+    ymax = 1.1 * max(highestTPRs)
+
+    plt.figure(figures[maxEpochNumber].number)
+    pylab.ylim(ymax = ymax)
+
+#----------
+
+lastEpochNumber = None
 
 epochsPerSecond = 2.0
 
 def animate(t):
     # t seems to be in seconds
 
-    global lastFigNumber, last_frame
+    global lastEpochNumber, last_frame
 
-    figNumber = int(t * epochsPerSecond)
-    figNumber = min(figNumber, len(figures) - 1)
+    epochNumber = int(t * epochsPerSecond) + 1
+    epochNumber = min(epochNumber, maxEpochNumber)
 
-    if figNumber == lastFigNumber:
+    if epochNumber == lastEpochNumber:
         return last_frame
 
-    fig = figures[figNumber]
-    lastFigNumber = figNumber
+    if not figures.has_key(epochNumber):
+        # produce this frame
+        fig = makeFigure(epochNumber, ymax)
+        figures[epochNumber] = fig
+
+        # delete the old one
+        if lastEpochNumber != None:
+            del figures[lastEpochNumber]
+
+    fig = figures[epochNumber]
+    lastEpochNumber = epochNumber
 
     last_frame = mplfig_to_npimage(fig)
     return last_frame
@@ -109,7 +131,7 @@ def animate(t):
 #----------
 
 # duration in seconds (?)
-duration = len(figures) / float(epochsPerSecond) + 2
+duration = maxEpochNumber / float(epochsPerSecond) + 2
 fps = 15
 animation = mpy.VideoClip(animate, duration=duration)
 animation.write_videofile("/tmp/test.mp4", fps=fps)
