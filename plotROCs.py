@@ -230,6 +230,31 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
 #----------------------------------------------------------------------
 
+def findLastCompleteEpoch(epochNumbers):
+    if not epochNumbers['train']:
+        print >> sys.stderr,"WARNING: no training files found"
+        return None
+
+    if not epochNumbers['test']:
+        print >> sys.stderr,"WARNING: no test files found"
+        return None
+
+    for sample in ('train','test'):
+        assert epochNumbers[sample][0] == 1
+        assert len(epochNumbers[sample]) == epochNumbers[sample][-1]
+
+    return min(epochNumbers['train'][-1], epochNumbers['test'][-1])
+
+#----------------------------------------------------------------------
+def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
+    if maxfpr == None:
+        return
+
+    # find highest TPR for which the FPR is <= maxfpr
+    highestTPR = max([ thisTPR for thisTPR, thisFPR in zip(tpr, fpr) if thisFPR <= maxfpr])
+    highestTPRs.append(highestTPR)
+
+#----------------------------------------------------------------------
 def drawLast(inputDir, description, xmax = None):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
@@ -239,38 +264,12 @@ def drawLast(inputDir, description, xmax = None):
 
     #----------
 
-    def findLastCompleteEpoch():
-        if not epochNumbers['train']:
-            print >> sys.stderr,"WARNING: no training files found"
-            return None
-
-        if not epochNumbers['test']:
-            print >> sys.stderr,"WARNING: no test files found"
-            return None
-
-        for sample in ('train','test'):
-            assert epochNumbers[sample][0] == 1
-            assert len(epochNumbers[sample]) == epochNumbers[sample][-1]
-
-        return min(epochNumbers['train'][-1], epochNumbers['test'][-1])
-
-    #----------
-
     # find the highest epoch for which both
     # train and test samples are available
 
-    epochNumber = findLastCompleteEpoch()
+    epochNumber = findLastCompleteEpoch(epochNumbers)
 
     highestTPRs = []
-
-    #----------
-    def updateHighestTPR(fpr, tpr, maxfpr):
-        if maxfpr == None:
-            return
-
-        # find highest TPR for which the FPR is <= maxfpr
-        highestTPR = max([ thisTPR for thisTPR, thisFPR in zip(tpr, fpr) if thisFPR <= maxfpr])
-        highestTPRs.append(highestTPR)
     #----------
 
     for sample, color in (
@@ -281,16 +280,14 @@ def drawLast(inputDir, description, xmax = None):
         # take the last epoch
         if epochNumber != None:
             fpr, tpr = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample, color, '-', 2)
-            updateHighestTPR(fpr, tpr, xmax)
+            updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
             fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample, color, '--', 1)
-            updateHighestTPR(fpr, tpr, xmax)            
-
-
+            updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of fake photons')
     pylab.ylabel('fraction of true photons')
