@@ -317,89 +317,91 @@ def drawLast(inputDir, description, xmax = None):
 #----------------------------------------------------------------------
 # main
 #----------------------------------------------------------------------
-from optparse import OptionParser
-parser = OptionParser("""
+if __name__ == '__main__':
 
-  usage: %prog [options] result-directory
+    from optparse import OptionParser
+    parser = OptionParser("""
 
-"""
-)
+      usage: %prog [options] result-directory
 
-parser.add_option("--last",
-                  default = False,
-                  action="store_true",
-                  help="plot ROC curve for last epoch only",
-                  )
+    """
+    )
 
-parser.add_option("--both",
-                  default = False,
-                  action="store_true",
-                  help="plot AUC evolution and last AUC curve",
-                  )
+    parser.add_option("--last",
+                      default = False,
+                      action="store_true",
+                      help="plot ROC curve for last epoch only",
+                      )
 
-(options, ARGV) = parser.parse_args()
+    parser.add_option("--both",
+                      default = False,
+                      action="store_true",
+                      help="plot AUC evolution and last AUC curve",
+                      )
 
-assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
+    (options, ARGV) = parser.parse_args()
 
-inputDir = ARGV.pop(0)
+    assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
 
-#----------
+    inputDir = ARGV.pop(0)
 
-description = readDescription(inputDir)
+    #----------
 
-import pylab
+    description = readDescription(inputDir)
 
-if options.last or options.both:
+    import pylab
 
-    drawLast(inputDir, description)
+    if options.last or options.both:
 
-    # zoomed version
-    # autoscaling in y with x axis range manually
-    # set seems not to work, so we implement
-    # something ourselves..
-    drawLast(inputDir, description, xmax = 0.05)
+        drawLast(inputDir, description)
 
-
-if not options.last or options.both:
-    # plot evolution of area under ROC curve vs. epoch
-
-    mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
-
-    pylab.figure(facecolor='white')
-
-    for sample, color in (
-        ('train', 'blue'),
-        ('test', 'red'),
-        ):
-
-        assert len(epochNumbers[sample]) == len(rocValues[sample])
-
-        # these are already sorted by ascending epoch
-        epochs, aucs = epochNumbers[sample], rocValues[sample]
-
-        pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
-
-        # draw a line for the MVA id ROC if available
-        auc = mvaROC[sample]
-        if auc != None:
-            pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
-                        label = "MVA " + sample)
-
-    pylab.grid()
-    pylab.xlabel('training epoch')
-    pylab.ylabel('AUC')
-
-    pylab.legend(loc = 'lower right')
-
-    if description != None:
-        pylab.title(description)
-
-    addTimestamp(inputDir)
-    addDirname(inputDir)
-
-#----------
+        # zoomed version
+        # autoscaling in y with x axis range manually
+        # set seems not to work, so we implement
+        # something ourselves..
+        drawLast(inputDir, description, xmax = 0.05)
 
 
-pylab.show()
+    if not options.last or options.both:
+        # plot evolution of area under ROC curve vs. epoch
+
+        mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
+
+        pylab.figure(facecolor='white')
+
+        for sample, color in (
+            ('train', 'blue'),
+            ('test', 'red'),
+            ):
+
+            assert len(epochNumbers[sample]) == len(rocValues[sample])
+
+            # these are already sorted by ascending epoch
+            epochs, aucs = epochNumbers[sample], rocValues[sample]
+
+            pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
+
+            # draw a line for the MVA id ROC if available
+            auc = mvaROC[sample]
+            if auc != None:
+                pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
+                            label = "MVA " + sample)
+
+        pylab.grid()
+        pylab.xlabel('training epoch')
+        pylab.ylabel('AUC')
+
+        pylab.legend(loc = 'lower right')
+
+        if description != None:
+            pylab.title(description)
+
+        addTimestamp(inputDir)
+        addDirname(inputDir)
+
+    #----------
+
+
+    pylab.show()
 
 
