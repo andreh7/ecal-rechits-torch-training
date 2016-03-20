@@ -10,7 +10,7 @@
 # the area under the ROC curve (using sklearn)
 
 import sys, os
-sys.path.append(os.path.expanduser("~aholz/torchio"))
+sys.path.append(os.path.expanduser("~/torchio"))
 import torchio
 
 import glob, re
