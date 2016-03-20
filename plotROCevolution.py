@@ -120,6 +120,9 @@ def animate(t):
 
         # delete the old one
         if lastEpochNumber != None:
+            figures[lastEpochNumber].clear()
+            pylab.close(figures[lastEpochNumber])
+            
             del figures[lastEpochNumber]
 
     fig = figures[epochNumber]
