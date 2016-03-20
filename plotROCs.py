@@ -74,6 +74,16 @@ def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
 def readROC(fname):
     # reads a torch file and calculates the area under the ROC
     # curve for it
+    # 
+    # also looks for a cached file
+
+
+    cachedFname = fname + ".cached-auc.py"
+
+    if os.path.exists(cachedFname):
+        print "reading",cachedFname
+        auc = float(open(cachedFname).read())
+        return auc
 
     print "reading",fname
     
@@ -90,6 +100,11 @@ def readROC(fname):
     fpr, tpr, dummy = roc_curve(labels, outputs, sample_weight = weights)
 
     aucValue = auc(fpr, tpr, reorder = True)
+
+    # write to cache
+    fout = open(cachedFname,"w")
+    print >> fout,aucValue
+    fout.close()
 
     return aucValue
 
