@@ -524,10 +524,6 @@ end
 -- main
 ----------------------------------------------------------------------
 
--- 4/ description of training and test procedures
---
--- Clement Farabet
-----------------------------------------------------------------------
 require 'torch'
 require 'os'
 
