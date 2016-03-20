@@ -209,6 +209,8 @@ def readROCfiles(inputDir, transformation = None):
 
 def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
+    import pylab
+
     print "reading",inputFname
     
     fin = torchio.InputFile(inputFname, "binary")
@@ -257,6 +259,9 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
 #----------------------------------------------------------------------
 def drawLast(inputDir, description, xmax = None):
     # plot ROC curve for last epoch only
+
+    import pylab
+
     pylab.figure(facecolor='white')
     
     # read only the file names
