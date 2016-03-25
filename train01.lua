@@ -43,6 +43,8 @@ threads = 1
 -- subdirectory to results in
 outputDir = 'results-' .. os.date("%Y-%m-%-d-%H%M%S")
 
+print('output directory is ' .. outputDir)
+
 batchSize = 1
 
 progressBarSteps = 500
