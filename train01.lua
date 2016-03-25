@@ -28,12 +28,6 @@ nfeats = 1
 width = 7
 height = 23
 
--- hidden units, filter sizes for convolutional network
-nstates = {64,64,128}
-filtsize = 5
-poolsize = 2
-
-
 -- if one specifies nothing (or nil), the full sizes
 -- from the input samples are taken
 -- 

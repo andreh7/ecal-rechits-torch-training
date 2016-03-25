@@ -8,6 +8,10 @@
 noutputs = 1
 ninputs = nfeats*width*height
 
+-- hidden units, filter sizes for convolutional network
+nstates = {64,64,128}
+filtsize = 5
+poolsize = 2
 
 ----------------------------------------------------------------------
 -- a typical modern convolution network (conv+relu+pool)
