@@ -243,8 +243,16 @@ theData = testData
 dataSize = tesize
 outputSuffix = "test"
 
+auxdata = {
+  varnames = varnames,
+
+  -- neede to build the data tensor again when reading the storage
+  numSamples = dataSize
+}
+
+
 -- write variable names out
-torch.save(outputPrefix .. "-varnames-" .. outputSuffix .. ".t7", varnames)
+torch.save(outputPrefix .. "-auxdata-" .. outputSuffix .. ".t7", auxdata)
 
 -- first create a small tensor to create an output file
 local fname = outputPrefix .. "-values-" .. outputSuffix .. ".t7"
@@ -263,8 +271,8 @@ outputTensor = torch.FloatTensor(outputStorage, 1, torch.LongStorage{dataSize, #
 
 -- fill the variables
 for row=1,dataSize do
-  if (row % 100 == 0) then
-    print("processing row " .. row .. " / " .. dataSize)
+  if (row % 10 == 0) then
+    xlua.progress(row, dataSize)
   end
 
   -- apply this sample to the network's input
