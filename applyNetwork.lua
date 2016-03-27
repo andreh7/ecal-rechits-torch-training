@@ -8,9 +8,6 @@ require 'math'
 require 'io'
 require 'xlua' -- for progress bars
 
--- needed for AUC
-metrics = require 'metrics';
-
 ----------------------------------------------------------------------
 -- parameters
 ----------------------------------------------------------------------
