@@ -43,6 +43,10 @@ progressBarSteps = 500
 -- if we don't do this, the weights will be double and
 -- the data will be float and we get an error
 torch.setdefaulttensortype('torch.FloatTensor')
+
+
+outputPrefix = "variables"
+
 ----------------------------------------------------------------------
 
 
@@ -51,8 +55,6 @@ torch.setdefaulttensortype('torch.FloatTensor')
 
 -- the trained network file
 networkFile = arg[1]
-
-
 
 ----------------------------------------------------------------------
 
@@ -127,36 +129,12 @@ function loadDataset(fnames, size)
 end -- function loadDataset
 
 ----------------------------------------------------------------------
-
-----------
--- parse command line arguments
-----------
-
-----------------------------------------------------------------------
-print 'loading dataset'
-
--- Note: the data, in X, is 3-d: the 1st dim indexes the samples
--- and the last two dims index the width and height of the samples.
-
-trainData, trsize = loadDataset(train_files, trsize)
-testData,  tesize = loadDataset(test_files, tesize)
-
--- load the trained network to be analyzed
-network = torch.load(networkFile)
-
--- assume it's a nn.Sequential for the moment
--- variable names:
--- mX_A_B_C_...
--- where A B C are the tensor indices 
-
-varnames = {}
-
-for moduleIndex = 1,#network.modules do
-  module = network.modules[moduleIndex]
+-- function for iterating over all indices of a tensor 
+function tensorIter(tens)
 
   local idx = {}
-  local ndim = module.output:dim()
-  local dims = module.output:size()
+  local ndim = tens:dim()
+  local dims = tens:size()
 
   idx[ndim] = 0
   for i=1, (ndim - 1) do
@@ -166,8 +144,10 @@ for moduleIndex = 1,#network.modules do
   -- loop over all indices
   local lastIndexFound = false 
 
-  while (not lastIndexFound) do
-
+  return function()
+    -- TODO: do we have to protect against
+    --       iterating beyond the end ?
+  
     -- increase index by one
     for i=ndim, 1, -1 do
       last_i = i
@@ -182,23 +162,129 @@ for moduleIndex = 1,#network.modules do
         lastIndexFound = true
         break
       end
-    end
+    end -- for
 
     if lastIndexFound then
-      break
+      return nil
+    else    
+      return idx
     end
+
+  end -- returned function  
+  
+end -- function tensorIter
+
+
+----------------------------------------------------------------------
+
+----------
+-- parse command line arguments
+----------
+print("setting number of threads to" .. threads)
+torch.setnumthreads(threads)
+
+----------------------------------------------------------------------
+
+-- load the trained network to be analyzed
+network = torch.load(networkFile)
+
+-- assume it's a nn.Sequential for the moment
+-- variable names:
+-- mX_A_B_C_...
+-- where A B C are the tensor indices 
+
+varnames = {}
+outputElements = {}
+
+for moduleIndex = 1,#network.modules do
+  module = network.modules[moduleIndex]
+
+  for idx in tensorIter(module.output) do
 
     -- build a name for this output value
     local varname = "m" .. moduleIndex
 
-    for i = 1,ndim do
+    for i = 1,#idx do
       varname = varname .. "_i" .. idx[i]
     end
 
+    -- add the variable name
+    table.insert(varnames, varname)
     print(varname)
+
+    -- keep a reference to the output element
+    local ref = module.output
+    for i = 1,#idx do
+      ref = ref:select(1, idx[i])
+    end
+
+    table.insert(outputElements, ref)
 
   end -- loop over all indices
 
 end
+
+-- we most likely can't keep everything in memory: we have e.g. 28k variables
+
+----------------------------------------
+print 'loading dataset'
+
+-- Note: the data, in X, is 3-d: the 1st dim indexes the samples
+-- and the last two dims index the width and height of the samples.
+
+-- trainData, trsize = loadDataset(train_files, trsize)
+testData,  tesize = loadDataset(test_files, tesize)
+
+----------
+-- create the output file
+----------
+
+-- see e.g. https://groups.google.com/forum/#!topic/torch7/E4SaoAEnit0
+-- how to use large memory mapped files
+
+theData = testData
+dataSize = tesize
+outputSuffix = "test"
+
+-- write variable names out
+torch.save(outputPrefix .. "-varnames-" .. outputSuffix .. ".t7", varnames)
+
+-- first create a small tensor to create an output file
+local fname = outputPrefix .. "-values-" .. outputSuffix .. ".t7"
+torch.save(fname, torch.FloatTensor(1,1))
+
+-- now reopen the file in 'shared' mode
+
+print("creating big output storage")
+outputStorage = torch.FloatStorage(fname, 
+                                   true,                 -- shared
+                                   dataSize * #varnames  -- size in units of elements to expand to
+                                  )
+
+
+outputTensor = torch.FloatTensor(outputStorage, 1, torch.LongStorage{dataSize, #varnames})
+
+-- fill the variables
+for row=1,dataSize do
+  if (row % 100 == 0) then
+    print("processing row " .. row .. " / " .. dataSize)
+  end
+
+  -- apply this sample to the network's input
+  -- local tmpInput = {}
+  -- table.insert(tmpInput, theData.data[row])
+
+  --  network:forward(theData.data:narrow(1,row,1))
+  network:forward(theData.data[row])
+
+  -- loop over each layer's output tensor
+  for col = 1,#outputElements do
+    outputTensor[{row,col}] = outputElements[col]
+  end -- loop over output elements
+
+end -- loop over samples
+
+
+
 
 
