@@ -191,7 +191,13 @@ network = torch.load(networkFile)
 -- where A B C are the tensor indices 
 
 varnames = {}
-outputElements = {}
+-- outputElements = {}
+
+-- maps from output variable index
+-- to indices and modules of the variables
+-- to write
+outputElementIndices = {}
+outputElementModules = {}
 
 for moduleIndex = 1,#network.modules do
   module = network.modules[moduleIndex]
@@ -209,13 +215,23 @@ for moduleIndex = 1,#network.modules do
     table.insert(varnames, varname)
     print(varname)
 
-    -- keep a reference to the output element
-    local ref = module.output
-    for i = 1,#idx do
-      ref = ref:select(1, idx[i])
+    -- not sure this works (I get all rows the same)
+    -- -- keep a reference to the output element
+    -- local ref = module.output
+    -- for i = 1,#idx do
+    --   ref = ref:select(1, idx[i])
+    -- end
+    -- 
+    -- table.insert(outputElements, ref)
+
+    -- make a clone
+    local clonedIdx = {}
+    for k,v in pairs(idx) do
+      clonedIdx[k] = v
     end
 
-    table.insert(outputElements, ref)
+    table.insert(outputElementIndices, clonedIdx)
+    table.insert(outputElementModules, module)
 
   end -- loop over all indices
 
@@ -283,8 +299,8 @@ for row=1,dataSize do
   network:forward(theData.data[row])
 
   -- loop over each layer's output tensor
-  for col = 1,#outputElements do
-    outputTensor[{row,col}] = outputElements[col]
+  for col = 1,#outputElementIndices do
+    outputTensor[{row,col}] = outputElementModules[col].output[outputElementIndices[col]]
   end -- loop over output elements
 
 end -- loop over samples
