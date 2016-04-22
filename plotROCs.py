@@ -154,7 +154,8 @@ def readROCfiles(inputDir, transformation = None):
         transformation = lambda fname: fname
 
     #----------
-    inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7"))
+    inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
+    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
 
     # ROCs values and epoch numbers for training and test
     rocValues    = dict(train = [], test = [])
@@ -171,7 +172,7 @@ def readROCfiles(inputDir, transformation = None):
         #  roc-data-test-mva.t7
         #  roc-data-train-0002.t7
 
-        mo = re.match("roc-data-(\S+)-mva\.t7$", basename)
+        mo = re.match("roc-data-(\S+)-mva\.t7(\.gz|\.bz2)?$", basename)
 
         if mo:
             sampleType = mo.group(1)
@@ -183,7 +184,7 @@ def readROCfiles(inputDir, transformation = None):
 
             continue
 
-        mo = re.match("roc-data-(\S+)-(\d+)\.t7$", basename)
+        mo = re.match("roc-data-(\S+)-(\d+)\.t7(\.gz|\.bz2)?$", basename)
 
         if mo:
             sampleType = mo.group(1)
