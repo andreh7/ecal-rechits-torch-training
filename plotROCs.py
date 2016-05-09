@@ -223,9 +223,10 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
     from sklearn.metrics import roc_curve, auc
 
     fpr, tpr, dummy = roc_curve(labels, outputs, sample_weight = weights)
+    auc = auc(fpr, tpr, reorder = True)
 
     # TODO: we could add the area to the legend
-    pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label)
+    pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label.format(auc = auc))
 
     return fpr, tpr
 
@@ -280,14 +281,14 @@ def drawLast(inputDir, description, xmax = None):
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample, color, '-', 2)
+            fpr, tpr = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample + " (auc {auc:.2f})", color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample, color, '--', 1)
+            fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample + " (auc {auc:.2f})", color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of fake photons')
@@ -383,7 +384,7 @@ if __name__ == '__main__':
             auc = mvaROC[sample]
             if auc != None:
                 pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
-                            label = "MVA " + sample)
+                            label = "MVA (auc=%.2f) %s" % (auc, sample))
 
         pylab.grid()
         pylab.xlabel('training epoch')
