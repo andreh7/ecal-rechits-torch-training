@@ -472,7 +472,7 @@ function test()
       -- get new sample
       local input = testData.data[t]
       local target = testData.labels[t]
-      local weight = trainData.weights[t]
+      local weight = testData.weights[t]
 
       -- test sample
       local pred = model:forward(input)
