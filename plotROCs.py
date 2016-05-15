@@ -157,6 +157,10 @@ def readROCfiles(inputDir, transformation = None):
     inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
 
+    if not inputFiles:
+        print >> sys.stderr,"no files roc-data-* found, exiting"
+        sys.exit(1)
+
     # ROCs values and epoch numbers for training and test
     rocValues    = dict(train = [], test = [])
     epochNumbers = dict(train = [], test = [])
@@ -202,7 +206,11 @@ def readROCfiles(inputDir, transformation = None):
 
     # sort by increasing epochs
     for sample in epochNumbers.keys():
-        epochNumbers[sample], rocValues[sample] = zip(*sorted(zip(epochNumbers[sample], rocValues[sample])))        
+
+        # in some cases we have e.g. no files for one of the samples (train or test)
+        # avoid zip raising an exception
+        if len(epochNumbers[sample]) > 0 and len(rocValues[sample]) > 0:
+            epochNumbers[sample], rocValues[sample] = zip(*sorted(zip(epochNumbers[sample], rocValues[sample])))        
     
     return mvaROC, epochNumbers, rocValues
 
@@ -232,8 +240,9 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
 #----------------------------------------------------------------------
 
-def findLastCompleteEpoch(epochNumbers):
-    if not epochNumbers['train']:
+def findLastCompleteEpoch(epochNumbers, ignoreTrain):
+    
+    if not ignoreTrain and not epochNumbers['train']:
         print >> sys.stderr,"WARNING: no training files found"
         return None
 
@@ -242,10 +251,17 @@ def findLastCompleteEpoch(epochNumbers):
         return None
 
     for sample in ('train','test'):
+        if ignoreTrain and sample == 'train':
+            continue
+
         assert epochNumbers[sample][0] == 1
         assert len(epochNumbers[sample]) == epochNumbers[sample][-1]
 
-    return min(epochNumbers['train'][-1], epochNumbers['test'][-1])
+    retval = epochNumbers['test'][-1]
+    
+    if not ignoreTrain:
+        retval = min(epochNumbers['train'][-1], retval)
+    return retval
 
 #----------------------------------------------------------------------
 def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
@@ -257,7 +273,7 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
     highestTPRs.append(highestTPR)
 
 #----------------------------------------------------------------------
-def drawLast(inputDir, description, xmax = None):
+def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
     
@@ -269,7 +285,7 @@ def drawLast(inputDir, description, xmax = None):
     # find the highest epoch for which both
     # train and test samples are available
 
-    epochNumber = findLastCompleteEpoch(epochNumbers)
+    epochNumber = findLastCompleteEpoch(epochNumbers, ignoreTrain)
 
     highestTPRs = []
     #----------
@@ -278,6 +294,9 @@ def drawLast(inputDir, description, xmax = None):
         ('train', 'blue'),
         ('test', 'red'),
         ):
+
+        if ignoreTrain and sample == 'train':
+            continue
         
         # take the last epoch
         if epochNumber != None:
@@ -338,6 +357,13 @@ if __name__ == '__main__':
                       help="plot AUC evolution and last AUC curve",
                       )
 
+    parser.add_option("--ignore-train",
+                      dest = 'ignoreTrain',
+                      default = False,
+                      action="store_true",
+                      help="do not look at train values",
+                      )
+
     (options, ARGV) = parser.parse_args()
 
     assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
@@ -352,13 +378,13 @@ if __name__ == '__main__':
 
     if options.last or options.both:
 
-        drawLast(inputDir, description)
+        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain)
 
         # zoomed version
         # autoscaling in y with x axis range manually
         # set seems not to work, so we implement
         # something ourselves..
-        drawLast(inputDir, description, xmax = 0.05)
+        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain)
 
 
     if not options.last or options.both:
@@ -372,6 +398,9 @@ if __name__ == '__main__':
             ('train', 'blue'),
             ('test', 'red'),
             ):
+
+            if options.ignoreTrain and sample == 'train':
+                continue
 
             assert len(epochNumbers[sample]) == len(rocValues[sample])
 
