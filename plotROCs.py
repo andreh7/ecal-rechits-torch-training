@@ -310,8 +310,8 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
             fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample + " (auc {auc:.2f})", color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
-    pylab.xlabel('fraction of fake photons')
-    pylab.ylabel('fraction of true photons')
+    pylab.xlabel('fraction of false positives')
+    pylab.ylabel('fraction of true positives')
 
     if xmax != None:
         pylab.xlim(xmax = xmax)

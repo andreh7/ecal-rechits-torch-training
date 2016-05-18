@@ -22,10 +22,20 @@ datasetFile = arg[2]
 -- read data set information
 dofile(datasetFile)
 
+assert(inputDataIsSparse, "this script is for sparse input data only")
+
+-- TODO: should print the selected value to the log file in case of typos...
+recHitsXoffset = recHitsXoffset or 0
+recHitsYoffset = recHitsYoffset or 0
+
+
+
+
+
 threads = 1
 
 -- subdirectory to results in
-outputDir = 'results-' .. os.date("%Y-%m-%d-%H%M%S")
+outputDir = 'results/' .. os.date("%Y-%m-%d-%H%M%S")
 
 print('output directory is ' .. outputDir)
 
