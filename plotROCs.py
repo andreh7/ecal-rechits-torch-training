@@ -407,7 +407,7 @@ if __name__ == '__main__':
             # these are already sorted by ascending epoch
             epochs, aucs = epochNumbers[sample], rocValues[sample]
 
-            pylab.plot(epochs, aucs, '-o', label = sample, color = color, linewidth = 2)
+            pylab.plot(epochs, aucs, '-o', label = sample + " (last auc=%.2f)" % aucs[-1], color = color, linewidth = 2)
 
             # draw a line for the MVA id ROC if available
             auc = mvaROC[sample]
