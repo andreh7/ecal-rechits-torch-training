@@ -377,10 +377,12 @@ function train()
 
          for recHitIndex = 1,trainData.data.numRecHits[rowIndex] do
 
-           xx = trainData.data.x[indexOffset + recHitIndex]
-           yy = trainData.data.y[indexOffset + recHitIndex]
+           xx = trainData.data.x[indexOffset + recHitIndex] + recHitsXoffset
+           yy = trainData.data.y[indexOffset + recHitIndex] + recHitsYoffset
 
-           input[{1, xx, yy}] = trainData.data.energy[indexOffset + recHitIndex]
+           if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+             input[{1, xx, yy}] = trainData.data.energy[indexOffset + recHitIndex]
+           end
 
          end -- loop over rechits of this photon
 
@@ -538,10 +540,12 @@ function test()
 
       for recHitIndex = 1,testData.data.numRecHits[rowIndex] do
 
-        xx = testData.data.x[indexOffset + recHitIndex]
-        yy = testData.data.y[indexOffset + recHitIndex]
+        xx = testData.data.x[indexOffset + recHitIndex] + recHitsXoffset
+        yy = testData.data.y[indexOffset + recHitIndex] + recHitsYoffset
 
-        input[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
+        if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+          input[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
+        end
 
       end -- loop over rechits of this photon
 
