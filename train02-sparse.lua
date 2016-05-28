@@ -68,8 +68,6 @@ function writeROCdata(relFname, targetValues, outputValues, weights)
      weight = weights
    }
 
-   print("WRITING ROC DATA", targetValues:size()[1],outputValues:min(), outputValues:max())
-
    torch.save(paths.concat(outputDir, relFname), dataForRoc)
 
 end -- function
