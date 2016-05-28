@@ -352,7 +352,10 @@ function train()
 
       local inputs = torch.zeros(batchSize, nfeats, width, height)
 
-      for i = t,math.min(t + batchSize - 1, trainData:size()) do
+      local thisEnd = math.min(t + batchSize - 1, trainData:size())
+      local thisBatchSize = thisEnd - t + 1
+
+      for i = t,thisEnd do
 
          local iLocal = i - t + 1
 
@@ -416,7 +419,7 @@ function train()
                           -- note that t and i are 1 based, so when
                           -- adding them, one must subtract 1
 
-                       for i = 1,inputs:size()[1] do
+                       for i = 1,thisBatchSize do
                           trainOutput[t + i - 1] = output[i]
                        end -- end of loop over minibatch members
 
