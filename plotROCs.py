@@ -68,6 +68,22 @@ def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
                      fontsize = 10,
                      )
 
+#----------------------------------------------------------------------
+
+def addNumEvents(numEventsTrain, numEventsTest):
+
+    for numEvents, label, x0, halign in (
+        (numEventsTrain, 'train', 0.00, 'left'),
+        (numEventsTest, 'test',   1.00, 'right'),
+        ):
+
+        if numEvents != None:
+            pylab.gca().text(x0, -0.08, '# ' + label + ' ev.: ' + str(numEventsTrain),
+                             horizontalalignment = halign,
+                             verticalalignment = 'center',
+                             transform = pylab.gca().transAxes,
+                             fontsize = 10,
+                             )
 
 #----------------------------------------------------------------------
 
@@ -236,7 +252,7 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
     # TODO: we could add the area to the legend
     pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label.format(auc = auc))
 
-    return fpr, tpr
+    return fpr, tpr, len(weights)
 
 #----------------------------------------------------------------------
 
@@ -290,6 +306,9 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
     highestTPRs = []
     #----------
 
+    # maps from sample type to number of events
+    numEvents = {}
+
     for sample, color in (
         ('train', 'blue'),
         ('test', 'red'),
@@ -300,14 +319,14 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample + " (auc {auc:.2f})", color, '-', 2)
+            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample + " (auc {auc:.2f})", color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            fpr, tpr = drawSingleROCcurve(fname, "MVA " + sample + " (auc {auc:.2f})", color, '--', 1)
+            fpr, tpr, dummy = drawSingleROCcurve(fname, "MVA " + sample + " (auc {auc:.2f})", color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of false positives')
@@ -323,6 +342,7 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
 
     addTimestamp(inputDir)
     addDirname(inputDir)
+    addNumEvents(numEvents.get('train', None), numEvents.get('test', None))
 
     if description != None:
 
