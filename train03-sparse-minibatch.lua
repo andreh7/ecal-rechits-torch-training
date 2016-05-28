@@ -516,8 +516,8 @@ function test()
       -- unpack sparse rechits
       -- ----------
 
-      -- TODO: can we move the creation of the tensor out of the loop ?
-      local input = torch.zeros(nfeats, width, height)
+      -- TODO: should we also use a batch size here ?
+      local input = torch.zeros(1, nfeats, width, height)
 
       local rowIndex = t;
       local indexOffset = testData.data.firstIndex[rowIndex] - 1
@@ -527,7 +527,7 @@ function test()
         xx = testData.data.x[indexOffset + recHitIndex]
         yy = testData.data.y[indexOffset + recHitIndex]
 
-        input[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
+        input[{1, 1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
 
       end -- loop over rechits of this photon
 
