@@ -102,6 +102,15 @@ if log == nil then
   print("could not open log file",err)
 end
 
+
+----------
+-- post process loaded data if specified
+----------
+if postLoadDataset ~= nil then
+  postLoadDataset('train', trainData)
+  postLoadDataset('test',  testData)
+end
+
 ----------
 -- write ROC data for mvaid
 ----------
