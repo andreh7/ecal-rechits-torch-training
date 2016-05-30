@@ -208,3 +208,16 @@ end -- function loadSparseDataset
 
 ----------------------------------------------------------------------
 
+function normalizeVector(vec)
+  -- normalizes (shift to zero and scale to unit standard deviation)
+  -- 1D tensors in place
+
+  -- subtract mean
+  vec:add( - vec:mean())
+
+  -- normalize to unit standard deviation
+  vec:div(vec:std())
+
+end
+
+----------------------------------------------------------------------
