@@ -112,15 +112,27 @@ function loadSparseDataset(fnames, size)
       -- create the first entry
 
       data = {
-         -- labels are 0/1 because we use cross-entropy loss
-         labels = loaded.y:sub(1, thisSize),
-      
-         weights = loaded.weight:sub(1, thisSize),
-    
-         mvaid = loaded.mvaid:sub(1, thisSize),
-
          data = {}
       }
+
+      -- copy other items (and map some names)
+
+      for name, values in pairs(loaded) do
+         if name ~= 'X' then
+
+           outputName = name
+  
+           if name == 'y' then
+             outputName = 'labels'
+           elseif name == 'weight' then
+             outputName = 'weights'
+           end
+           
+           -- labels are 0/1 because we use cross-entropy loss
+           data[outputName] = loaded[name]:sub(1, thisSize)
+        end
+
+      end -- loop over input items
 
       -- copy rechits
 
@@ -135,12 +147,22 @@ function loadSparseDataset(fnames, size)
 
     else
       -- append
-      data.labels  = data.labels:cat(loaded.y:sub(1, thisSize), 1)
+      for name, values in pairs(loaded) do
 
-      data.weights = data.weights:cat(loaded.weight:sub(1, thisSize), 1)
+        if name ~= 'X' then
+           outputName = name
+  
+           if name == 'y' then
+             outputName = 'labels'
+           elseif name == 'weight' then
+             outputName = 'weights'
+           end
+           
+           -- labels are 0/1 because we use cross-entropy loss
+           data[outputName] = data[outputName]:cat(loaded[name]:sub(1, thisSize), 1)
+        end
 
-      data.mvaid   = data.mvaid:cat(loaded.mvaid:sub(1, thisSize), 1)
-
+      end -- loop over input items
 
       numPhotonsBefore = data.data.firstIndex:size()[1]
       numRecHitsBefore = data.data.energy:size()[1]
