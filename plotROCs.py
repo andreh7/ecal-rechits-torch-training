@@ -147,6 +147,9 @@ def readDescription(inputDir):
                 fname = fname[:-6]
             elif fname.endswith("-test"):
                 fname = fname[:-5]
+
+            fname = fname.replace("_rechits","")
+
             description.append(fname)
 
         return ", ".join(description)
