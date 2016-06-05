@@ -136,6 +136,8 @@ fout:close()
 
 dofile(modelFile)
 
+assert(makeInput != nil, "must define a function 'makeInput' to prepare input to the model")
+
 ----------------------------------------------------------------------
 -- loss function
 ----------------------------------------------------------------------
@@ -265,40 +267,7 @@ function train()
       local weights = {}
       for i = t,math.min(t + batchSize - 1, trainData:size()) do
          -- load new sample
-         local input 
-
-         if inputDataIsSparse then
-           -- TODO: move this into a function so that we can also
-           --       use it in test(..)
-
-           -- ----------
-           -- unpack the sparse data
-           -- ----------
-  
-           -- TODO: can we move the creation of the tensor out of the loop ?
-           --       seems to be 2x slower ?!
-           --       also one has to pay attention to actually clear the vector here
-           input = torch.zeros(nfeats, width, height)
-  
-           local rowIndex = shuffle[i]
-           local indexOffset = trainData.data.firstIndex[rowIndex] - 1
-  
-           for recHitIndex = 1,trainData.data.numRecHits[rowIndex] do
-  
-             xx = trainData.data.x[indexOffset + recHitIndex] + recHitsXoffset
-             yy = trainData.data.y[indexOffset + recHitIndex] + recHitsYoffset
-  
-             if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-               input[{1, xx, yy}] = trainData.data.energy[indexOffset + recHitIndex]
-             end
-  
-           end -- loop over rechits of this photon
-  
-           -- ----------
-         else
-           -- rechits are not sparse
-           input = trainData.data[shuffle[i]]
-         end
+         local input = makeInput(trainData, shuffle[i], inputDataIsSparse)
 
          local target = trainData.labels[shuffle[i]]
          local weight = trainData.weights[shuffle[i]]
@@ -439,35 +408,7 @@ function test()
       end
 
       -- get new sample
-      local input
-
-      if inputDataIsSparse then
-        -- ----------
-        -- unpack sparse rechits
-        -- ----------
-
-        -- TODO: can we move the creation of the tensor out of the loop ?
-        input = torch.zeros(nfeats, width, height)
-
-        local rowIndex = t;
-        local indexOffset = testData.data.firstIndex[rowIndex] - 1
-
-        for recHitIndex = 1,testData.data.numRecHits[rowIndex] do
-
-          xx = testData.data.x[indexOffset + recHitIndex] + recHitsXoffset
-          yy = testData.data.y[indexOffset + recHitIndex] + recHitsYoffset
-
-          if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-            input[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
-          end
-
-        end -- loop over rechits of this photon
-
-        -- ----------
-
-      else
-        input = testData.data[t]
-      end
+      local input = makeInput(testData, t, inputDataIsSparse)
 
       local target = testData.labels[t]
       local weight = testData.weights[t]
