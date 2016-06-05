@@ -97,3 +97,54 @@ model:add(nn.JoinTable(1))
 model:add(outputModel)
 
 
+----------------------------------------------------------------------
+-- function to prepare input data samples
+----------------------------------------------------------------------
+function makeInput(dataset, rowIndex, inputDataIsSparse)
+
+  -- TODO: support multiple rows at a time (minibatch)
+  local input = {}
+  local recHits
+
+  if inputDataIsSparse then
+    -- TODO: move this into a function so that we can also
+    --       use it in test(..)
+
+    -- ----------
+    -- unpack the sparse data
+    -- ----------
+
+    -- TODO: can we move the creation of the tensor out of the loop ?
+    --       seems to be 2x slower ?!
+    --       also one has to pay attention to actually clear the vector here
+    recHits = torch.zeros(nfeats, width, height)
+
+    local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+
+    for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+
+      xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
+      yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
+
+      if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+        recHits[{1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
+      end
+
+    end -- loop over rechits of this photon
+
+    -- ----------
+  else
+    -- rechits are not sparse
+    assert(false, 'we should not come here currently')
+    input = dataset.data[rowIndex]
+  end
+
+  table.insert(input, recHits)
+  table.insert(input, dataset.chgIsoWrtChosenVtx:sub(rowIndex, rowIndex))
+  table.insert(input, dataset.chgIsoWrtWorstVtx:sub(rowIndex, rowIndex))
+
+  return input
+
+end
+
+----------------------------------------------------------------------
