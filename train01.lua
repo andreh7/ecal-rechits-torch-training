@@ -265,7 +265,8 @@ function train()
       local weights = {}
       for i = t,math.min(t + batchSize - 1, trainData:size()) do
          -- load new sample
-         local input 
+         local input = {}
+         local recHits
 
          if inputDataIsSparse then
            -- TODO: move this into a function so that we can also
@@ -278,7 +279,7 @@ function train()
            -- TODO: can we move the creation of the tensor out of the loop ?
            --       seems to be 2x slower ?!
            --       also one has to pay attention to actually clear the vector here
-           input = torch.zeros(nfeats, width, height)
+           recHits = torch.zeros(nfeats, width, height)
   
            local rowIndex = shuffle[i]
            local indexOffset = trainData.data.firstIndex[rowIndex] - 1
@@ -289,7 +290,7 @@ function train()
              yy = trainData.data.y[indexOffset + recHitIndex] + recHitsYoffset
   
              if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-               input[{1, xx, yy}] = trainData.data.energy[indexOffset + recHitIndex]
+               recHits[{1, xx, yy}] = trainData.data.energy[indexOffset + recHitIndex]
              end
   
            end -- loop over rechits of this photon
@@ -297,8 +298,15 @@ function train()
            -- ----------
          else
            -- rechits are not sparse
+           assert(false, 'we should not come here currently')
            input = trainData.data[shuffle[i]]
          end
+
+         table.insert(input, recHits)
+         table.insert(input, trainData.chgIsoWrtChosenVtx:sub(shuffle[i], shuffle[i]))
+         table.insert(input, trainData.chgIsoWrtWorstVtx:sub(shuffle[i], shuffle[i]))
+
+         ----------
 
          local target = trainData.labels[shuffle[i]]
          local weight = trainData.weights[shuffle[i]]
@@ -439,7 +447,8 @@ function test()
       end
 
       -- get new sample
-      local input
+      local input = {}
+      local recHits
 
       if inputDataIsSparse then
         -- ----------
@@ -447,7 +456,7 @@ function test()
         -- ----------
 
         -- TODO: can we move the creation of the tensor out of the loop ?
-        input = torch.zeros(nfeats, width, height)
+        recHits = torch.zeros(nfeats, width, height)
 
         local rowIndex = t;
         local indexOffset = testData.data.firstIndex[rowIndex] - 1
@@ -458,7 +467,7 @@ function test()
           yy = testData.data.y[indexOffset + recHitIndex] + recHitsYoffset
 
           if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-            input[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
+            recHits[{1, xx, yy}] = testData.data.energy[indexOffset + recHitIndex]
           end
 
         end -- loop over rechits of this photon
@@ -466,8 +475,16 @@ function test()
         -- ----------
 
       else
+        assert(false, 'we should not come here currently')
         input = testData.data[t]
       end
+
+      ----------
+      table.insert(input, recHits)
+      table.insert(input, testData.chgIsoWrtChosenVtx:sub(t,t))
+      table.insert(input, testData.chgIsoWrtWorstVtx:sub(t,t))
+
+      ----------
 
       local target = testData.labels[t]
       local weight = testData.weights[t]
