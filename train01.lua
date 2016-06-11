@@ -136,7 +136,7 @@ fout:close()
 
 dofile(modelFile)
 
-assert(makeInput != nil, "must define a function 'makeInput' to prepare input to the model")
+assert(makeInput ~= nil, "must define a function 'makeInput' to prepare input to the model")
 
 ----------------------------------------------------------------------
 -- loss function
