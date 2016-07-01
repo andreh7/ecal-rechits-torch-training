@@ -377,12 +377,12 @@ end -- function train()
 function test()
    -- local vars
    local startTime = sys.clock()
-   local testOutput = torch.FloatTensor(tesize)
+   local testOutput = torch.Tensor(tesize)
 
    -- TODO: change naming: these are not shuffled but
    --       a potential subtensor of the full set
-   local shuffledTargets = torch.FloatTensor(tesize)
-   local shuffledWeights = torch.FloatTensor(tesize)
+   local shuffledTargets = torch.Tensor(tesize)
+   local shuffledWeights = torch.Tensor(tesize)
 
    -- averaged param use?
    if average then
