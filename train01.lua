@@ -234,7 +234,7 @@ function train()
    model:training()
 
    -- shuffle at each epoch
-   shuffle = torch.FloatTensor():randperm(trsize)
+   shuffle = torch.IntTensor():randperm(trsize)
 
    -- in order to avoid problems e.g. with BCECriterion which does not work
    -- when the input and target size differs from the size of the
