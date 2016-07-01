@@ -105,9 +105,10 @@ model:add(outputModel)
 ----------------------------------------------------------------------
 -- function to prepare input data samples
 ----------------------------------------------------------------------
-function makeInput(dataset, rowIndex, inputDataIsSparse)
+function makeInput(dataset, rowIndices, inputDataIsSparse)
 
-  -- TODO: support multiple rows at a time (minibatch)
+  batchSize = rowIndices:size()[1]
+
   local input = {}
   local recHits
 
@@ -122,20 +123,26 @@ function makeInput(dataset, rowIndex, inputDataIsSparse)
     -- TODO: can we move the creation of the tensor out of the loop ?
     --       seems to be 2x slower ?!
     --       also one has to pay attention to actually clear the vector here
-    recHits = torch.zeros(nfeats, width, height)
+    recHits = torch.zeros(batchSize, nfeats, width, height)
 
-    local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+    for i=1,batchSize do
 
-    for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+      local rowIndex = rowIndices[i]
 
-      xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
-      yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
+      local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+  
+      for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+  
+        xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
+        yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
+  
+        if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+          recHits[{i, 1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
+        end
+  
+      end -- loop over rechits of this photon
+    end -- loop over minibatch indices
 
-      if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-        recHits[{1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
-      end
-
-    end -- loop over rechits of this photon
 
     -- ----------
   else
@@ -145,8 +152,17 @@ function makeInput(dataset, rowIndex, inputDataIsSparse)
   end
 
   table.insert(input, recHits)
-  table.insert(input, dataset.chgIsoWrtChosenVtx:sub(rowIndex, rowIndex))
-  table.insert(input, dataset.chgIsoWrtWorstVtx:sub(rowIndex, rowIndex))
+
+  -- note that we use two dimensions here to be able
+  -- to use JoinTable with minibatch
+  table.insert(input, torch.zeros(batchSize,1))
+  table.insert(input, torch.zeros(batchSize,1))
+
+  for i=1,batchSize do
+    local rowIndex = rowIndices[i]
+    input[2][{i,1}] = dataset.chgIsoWrtChosenVtx[rowIndex]
+    input[3][{i,1}] = dataset.chgIsoWrtWorstVtx[rowIndex]
+  end
 
   return input
 
