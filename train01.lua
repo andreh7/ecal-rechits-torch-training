@@ -40,7 +40,7 @@ progressBarSteps = 500
 
 -- if we don't do this, the weights will be double and
 -- the data will be float and we get an error
-torch.setdefaulttensortype('torch.FloatTensor')
+torch.setdefaulttensortype('torch.CudaTensor')
 ----------------------------------------------------------------------
 
 -- writes out a table containing information to calculate
