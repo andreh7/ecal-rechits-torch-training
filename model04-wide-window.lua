@@ -67,9 +67,10 @@ model:add(nn.Linear(nstates[3], noutputs))
 ----------------------------------------------------------------------
 -- function to prepare input data samples
 ----------------------------------------------------------------------
-function makeInput(dataset, rowIndex, inputDataIsSparse)
+function makeInput(dataset, rowIndices, inputDataIsSparse)
 
-  -- TODO: support multiple rows at a time (minibatch)
+  local batchSize = rowIndices:size()[1]
+
   local input = {}
   local recHits
 
@@ -84,21 +85,26 @@ function makeInput(dataset, rowIndex, inputDataIsSparse)
     -- TODO: can we move the creation of the tensor out of the loop ?
     --       seems to be 2x slower ?!
     --       also one has to pay attention to actually clear the vector here
-    recHits = torch.zeros(nfeats, width, height)
+    recHits = torch.zeros(batchSize, nfeats, width, height)
 
-    local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+    for i=1,batchSize do
 
-    for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+      local rowIndex = rowIndices[i]
 
-      xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
-      yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
-
-      if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
-        recHits[{1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
-      end
-
-    end -- loop over rechits of this photon
-
+      local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+  
+      for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+  
+        xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
+        yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
+  
+        if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+          recHits[{i, 1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
+        end
+  
+      end -- loop over rechits of this photon
+    end -- loop over minibatch
+  
     -- ----------
   else
     -- rechits are not sparse
