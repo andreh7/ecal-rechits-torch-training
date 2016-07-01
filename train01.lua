@@ -339,8 +339,8 @@ function train()
                        end -- end of loop over minibatch members
 
                        -- normalize function value and gradient
-                       gradParameters:div(inputs:size()[1])
-                       f = f/ inputs:size()[1]
+                       gradParameters:div(thisBatchSize)
+                       f = f / thisBatchSize
 
                        -- return f and df/dX
                        return f,gradParameters
