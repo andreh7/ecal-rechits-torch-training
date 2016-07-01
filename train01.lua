@@ -241,9 +241,9 @@ function train()
    -- not sure why we have to define them locally,
    -- defining them outside seems to suddenly
    -- reduce the size of e.g. shuffledTargets to half the entries...
-   local shuffledTargets = torch.FloatTensor(trsize)
-   local shuffledWeights = torch.FloatTensor(trsize)
-   local trainOutput     = torch.FloatTensor(trsize)
+   local shuffledTargets = torch.Tensor(trsize)
+   local shuffledWeights = torch.Tensor(trsize)
+   local trainOutput     = torch.Tensor(trsize)
 
    -- do one epoch
    print("training epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
@@ -273,7 +273,7 @@ function train()
          local weight = trainData.weights[shuffle[i]]
 
          -- TODO: may take some unnecessary CPU time
-         target = torch.FloatTensor({target})
+         target = torch.Tensor({target})
 
          -- for ROC curve evaluation on training sample
          shuffledTargets[i] = target
