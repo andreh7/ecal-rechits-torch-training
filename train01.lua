@@ -32,7 +32,7 @@ outputDir = 'results/' .. os.date("%Y-%m-%d-%H%M%S")
 
 print('output directory is ' .. outputDir)
 
-batchSize = 1
+batchSize = 32
 
 progressBarSteps = 500
 
@@ -236,21 +236,32 @@ function train()
    -- shuffle at each epoch
    shuffle = torch.FloatTensor():randperm(trsize)
 
+   -- in order to avoid problems e.g. with BCECriterion which does not work
+   -- when the input and target size differs from the size of the
+   -- weight vector (which is given to the BCECriterion constructor)
+   -- we only run over minibatches of the same size
+   --
+   -- we also need to make sure that we do not leave any uninitialized
+   -- values, so we shorten the training set to an integer multiple
+   -- of the minibatch size
+
+   local effectiveTrainingSize = math.floor(trsize / batchSize) * batchSize
+
    -- for calculating the AUC
    --
    -- not sure why we have to define them locally,
    -- defining them outside seems to suddenly
    -- reduce the size of e.g. shuffledTargets to half the entries...
-   local shuffledTargets = torch.Tensor(trsize)
-   local shuffledWeights = torch.Tensor(trsize)
-   local trainOutput     = torch.Tensor(trsize)
+   local shuffledTargets = torch.Tensor(effectiveTrainingSize)
+   local shuffledWeights = torch.Tensor(effectiveTrainingSize)
+   local trainOutput     = torch.Tensor(effectiveTrainingSize)
 
    -- do one epoch
    print("training epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
    log:write("training epoch # " .. tostring(epoch) .. ' [batchSize = ' .. tostring(batchSize) .. ']\n')
    log:flush()
 
-   for t = 1,trainData:size(), batchSize do
+   for t = 1,effectiveTrainingSize, batchSize do
       -- call garbage collector
       if (t % 300) == 0 then
         collectgarbage()
@@ -261,30 +272,35 @@ function train()
         xlua.progress(t, trainData:size())
       end
 
+      -- calculate effective size of this batch
+      local thisEnd = math.min(t + batchSize - 1, trainData:size())
+      local thisBatchSize = thisEnd - t + 1
+
       -- create a mini batch
-      local inputs = {}
-      local targets = {}
-      local weights = {}
-      for i = t,math.min(t + batchSize - 1, trainData:size()) do
-         -- load new sample
-         local input = makeInput(trainData, shuffle[i], inputDataIsSparse)
+      -- see also https://github.com/torch/demos/blob/master/train-a-digit-classifier/train-on-mnist.lua
+      local targets = torch.zeros(thisBatchSize)
+      local weights = torch.zeros(thisBatchSize)
 
-         local target = trainData.labels[shuffle[i]]
-         local weight = trainData.weights[shuffle[i]]
+      -- make a list of indices in this batch
+      local rowIndices = shuffle:sub(t,thisEnd)
 
-         -- TODO: may take some unnecessary CPU time
-         target = torch.Tensor({target})
+      -- create the inputs
+      local inputs = makeInput(trainData, rowIndices, inputDataIsSparse)
+
+      for i = t,thisEnd do
+
+         local iLocal = i - t + 1
+
+         targets[iLocal] = trainData.labels[shuffle[i]]
+         weights[iLocal] = trainData.weights[shuffle[i]]
 
          -- for ROC curve evaluation on training sample
-         shuffledTargets[i] = target
-         shuffledWeights[i] = weight
-
-         table.insert(inputs, input)
-         table.insert(targets, target)
+         shuffledTargets[i] = targets[iLocal]
+         shuffledWeights[i] = weights[iLocal]
 
          -- copy weights into the weights variable
          -- for the current batch
-         batchWeights[i - t + 1] = trainData.weights[i]
+         batchWeights[iLocal] = trainData.weights[shuffle[i]]
 
       end
 
@@ -302,28 +318,29 @@ function train()
                        local f = 0
 
                        -- evaluate function for complete mini batch
-                       for i = 1,#inputs do
                           -- note that #inputs is the minibatch size !
 
                           -- estimate f
-                          local output = model:forward(inputs[i])
+                          local output = model:forward(inputs)
 
-                          local err = criterion:forward(output, targets[i])
+                          local err = criterion:forward(output, targets)
                           f = f + err
 
                           -- estimate df/dW
-                          local df_do = criterion:backward(output, targets[i])
-                          model:backward(inputs[i], df_do)
+                          local df_do = criterion:backward(output, targets)
+                          model:backward(inputs, df_do)
 
                           -- note that i is the index inside the minibatch
                           -- note that t and i are 1 based, so when
                           -- adding them, one must subtract 1
-                          trainOutput[t + i - 1] = output[1]
+
+                       for i = 1,thisBatchSize do
+                          trainOutput[t + i - 1] = output[i]
                        end -- end of loop over minibatch members
 
                        -- normalize function value and gradient
-                       gradParameters:div(#inputs)
-                       f = f/#inputs
+                       gradParameters:div(inputs:size()[1])
+                       f = f/ inputs:size()[1]
 
                        -- return f and df/dX
                        return f,gradParameters
@@ -331,7 +348,6 @@ function train()
 
       -- optimize on current mini-batch
       optimMethod(feval, parameters, optimState)
-
    end
 
    -- time taken
@@ -396,6 +412,15 @@ function test()
    -- test over test data
    print('testing on test set')
    log:write('testing on test set\n')
+
+   -- TODO: also use batches for testing
+   --       (as much as fits into memory)
+
+   local target = torch.Tensor(1)
+   local weight = torch.Tensor(1)
+
+   local rowIndices = torch.IntTensor(1)
+
    for t = 1,testData:size() do
 
       if (t % 10 == 0) then
@@ -408,19 +433,17 @@ function test()
       end
 
       -- get new sample
-      local input = makeInput(testData, t, inputDataIsSparse)
+      rowIndices[1] = t
+      local input = makeInput(testData, rowIndices, inputDataIsSparse)
 
-      local target = testData.labels[t]
-      local weight = testData.weights[t]
+      target[1] = testData.labels[t]
+      weight[1] = testData.weights[t]
 
       -- test sample
       local pred = model:forward(input)
 
       -- confusion:add(pred, target)
       testOutput[t] = pred[1]
-
-      -- TODO: may take some unnecessary CPU time
-      target = torch.FloatTensor({target})
 
       shuffledTargets[t] = target[1]
       shuffledWeights[t] = weight
