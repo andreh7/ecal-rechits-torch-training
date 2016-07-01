@@ -98,7 +98,7 @@ outputModel:add(nn.Linear(nstates[3], noutputs))
 ----------
 model = nn.Sequential()
 model:add(parallelModel)
-model:add(nn.JoinTable(1))
+model:add(nn.JoinTable(2,2))
 model:add(outputModel)
 
 
