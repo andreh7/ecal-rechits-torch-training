@@ -234,7 +234,7 @@ function train()
    model:training()
 
    -- shuffle at each epoch
-   shuffle = torch.randperm(trsize)
+   shuffle = torch.FloatTensor():randperm(trsize)
 
    -- for calculating the AUC
    --
