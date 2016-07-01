@@ -8,6 +8,10 @@ require 'math'
 require 'io'
 require 'xlua' -- for progress bars
 
+require 'cutorch';
+require 'nn.THNN';
+require 'cunn';
+
 -- common code
 require 'myutils'
 
