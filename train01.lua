@@ -435,24 +435,19 @@ function test()
         xlua.progress(t, testData:size())
       end
 
-      -- get new sample
-      for i = 1, thisBatchSize do
-        rowIndices[i] = t + i - 1
-
-        target[i] = testData.labels[t + i - 1]
-        weight[i] = testData.weights[t + i - 1]
-      end
+      -- get new samples
+      rowIndices = rowIndices:range(t, thisEnd) -- can't use torch.range(..) with CudaTensor as default
+      target     = testData.labels:sub(t, thisEnd)
+      weight     = testData.weights:sub(t, thisEnd)
 
       local input = makeInput(testData, rowIndices, inputDataIsSparse)
 
       -- test sample
       local pred = model:forward(input)
 
-      for i = 1, thisBatchSize do
-        testOutput[t + i - 1] = pred[i]
-        shuffledTargets[t + i - 1] = target[i]
-        shuffledWeights[t + i - 1] = weight[i]
-      end
+      testOutput[{{t, thisEnd}}] = pred
+      shuffledTargets[{{t, thisEnd}}] = target
+      shuffledWeights[{{t, thisEnd}}] = weight
 
    end
 
