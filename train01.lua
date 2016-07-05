@@ -416,12 +416,15 @@ function test()
    -- TODO: also use batches for testing
    --       (as much as fits into memory)
 
-   local target = torch.Tensor(1)
-   local weight = torch.Tensor(1)
+   local target = torch.Tensor(batchSize)
+   local weight = torch.Tensor(batchSize)
 
-   local rowIndices = torch.IntTensor(1)
+   local rowIndices = torch.IntTensor(batchSize)
 
-   for t = 1,testData:size() do
+   for t = 1,testData:size(), batchSize do
+
+      local thisEnd = math.min(t + batchSize - 1, testData:size())
+      local thisBatchSize = thisEnd - t + 1
 
       if (t % 10 == 0) then
          collectgarbage()
@@ -433,20 +436,24 @@ function test()
       end
 
       -- get new sample
-      rowIndices[1] = t
-      local input = makeInput(testData, rowIndices, inputDataIsSparse)
+      for i = 1, thisBatchSize do
+        rowIndices[i] = t + i - 1
 
-      target[1] = testData.labels[t]
-      weight[1] = testData.weights[t]
+        target[i] = testData.labels[t + i - 1]
+        weight[i] = testData.weights[t + i - 1]
+      end
+
+      local input = makeInput(testData, rowIndices, inputDataIsSparse)
 
       -- test sample
       local pred = model:forward(input)
 
-      -- confusion:add(pred, target)
-      testOutput[t] = pred[1]
+      for i = 1, thisBatchSize do
+        testOutput[t + i - 1] = pred[i]
+        shuffledTargets[t + i - 1] = target[i]
+        shuffledWeights[t + i - 1] = weight[i]
+      end
 
-      shuffledTargets[t] = target[1]
-      shuffledWeights[t] = weight
    end
 
    -- timing
