@@ -63,3 +63,54 @@ model:add(nn.Dropout(0.5))
 model:add(nn.Linear(nstates[2]*1*5, nstates[3]))
 model:add(nn.ReLU())
 model:add(nn.Linear(nstates[3], noutputs))
+
+----------------------------------------------------------------------
+-- function to prepare input data samples
+----------------------------------------------------------------------
+function makeInput(dataset, rowIndices, inputDataIsSparse)
+
+  local batchSize = rowIndices:size()[1]
+
+  local recHits
+
+  if inputDataIsSparse then
+    -- ----------
+    -- unpack the sparse data
+    -- ----------
+
+    -- TODO: can we move the creation of the tensor out of the loop ?
+    --       seems to be 2x slower ?!
+    --       also one has to pay attention to actually clear the vector here
+    recHits = torch.zeros(batchSize, nfeats, width, height)
+
+    for i=1,batchSize do
+
+      local rowIndex = rowIndices[i]
+
+      local indexOffset = dataset.data.firstIndex[rowIndex] - 1
+  
+      for recHitIndex = 1,dataset.data.numRecHits[rowIndex] do
+  
+        xx = dataset.data.x[indexOffset + recHitIndex] + recHitsXoffset
+        yy = dataset.data.y[indexOffset + recHitIndex] + recHitsYoffset
+  
+        if xx >= 1 and xx <= width and yy >= 1 and yy <= height then
+          recHits[{i, 1, xx, yy}] = dataset.data.energy[indexOffset + recHitIndex]
+        end
+  
+      end -- loop over rechits of this photon
+    end -- loop over minibatch indices
+
+
+    -- ----------
+  else
+    -- rechits are not sparse
+    assert(false, 'we should not come here currently')
+    input = dataset.data[rowIndex]
+  end
+
+  return recHits
+
+end
+
+----------------------------------------------------------------------
