@@ -261,6 +261,11 @@ function train()
    log:write("training epoch # " .. tostring(epoch) .. ' [batchSize = ' .. tostring(batchSize) .. ']\n')
    log:flush()
 
+   -- create a mini batch
+   -- see also https://github.com/torch/demos/blob/master/train-a-digit-classifier/train-on-mnist.lua
+   local targets = torch.zeros(batchSize)
+   local weights = torch.zeros(batchSize)
+
    for t = 1,effectiveTrainingSize, batchSize do
       -- call garbage collector
       if (t % 300) == 0 then
@@ -275,11 +280,6 @@ function train()
       -- calculate effective size of this batch
       local thisEnd = math.min(t + batchSize - 1, trainData:size())
       local thisBatchSize = thisEnd - t + 1
-
-      -- create a mini batch
-      -- see also https://github.com/torch/demos/blob/master/train-a-digit-classifier/train-on-mnist.lua
-      local targets = torch.zeros(thisBatchSize)
-      local weights = torch.zeros(thisBatchSize)
 
       -- make a list of indices in this batch
       local rowIndices = shuffle:sub(t,thisEnd)
