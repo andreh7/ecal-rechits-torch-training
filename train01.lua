@@ -338,12 +338,12 @@ function train()
    local time = sys.clock() - startTime
 
    print("\n")
-   print("time to learn 1 sample: " .. (time / trainData:size() * 1000) .. ' ms')
-   print("time for entire batch:",time / 60.0,"min")
+   print(string.format("time to learn 1 sample: %.2f ms", time / trainData:size() * 1000))
+   print(string.format("time for entire batch: %.2f min", time / 60.0))
 
    log:write("\n")
-   log:write("time to learn 1 sample: " .. tostring(time / trainData:size() * 1000) .. ' ms\n')
-   log:write("time for entire batch: " .. tostring(time / 60.0) .. " min\n")
+   log:write(string.format("time to learn 1 sample: %.2f ms\n", time / trainData:size() * 1000))
+   log:write(string.format("time for entire batch: %.2f min\n", time / 60.0))
 
    -- write out network outputs, labels and weights
    -- to a file so that we can calculate the ROC value with some other tool
@@ -357,8 +357,8 @@ function train()
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1, shuffledWeights)
 
    local trainAUC = metrics.roc.area(roc_points)
-   print("train AUC:", trainAUC)
-   log:write("train AUC: " .. tostring(trainAUC) .. "\n")
+   print(string.format("train AUC: %.3f", trainAUC))
+   log:write(string.format("train AUC: %.3f\n", trainAUC))
 
    -- save/log current net
    local filename = paths.concat(outputDir, 'model' .. string.format("%04d", epoch) .. '.net')
@@ -429,12 +429,12 @@ function test()
    -- timing
    local time = sys.clock() - startTime
    print("\n")
-   print("time to test 1 sample: " .. (time / testData:size() *1000) .. ' ms')
-   print("time for entire test batch:",time / 60.0,"min")
+   print(string.format("time to test 1 sample: %.2f ms", time / testData:size() * 1000))
+   print(string.format("time for entire test batch: %.2f min",time / 60.0))
 
    log:write('\n')
-   log:write("time to test 1 sample: " .. tostring(time / testData:size() *1000) .. ' ms\n')
-   log:write("time for entire test batch: " .. tostring(time / 60.0) .. " min\n")
+   log:write(string.format("time to test 1 sample: %.2f ms\n", time / testData:size() * 1000))
+   log:write(string.format("time for entire test batch: %.2f min\n", time / 60.0))
 
    -- write out network outputs, labels and weights
    -- to a file so that we can calculate the ROC value with some other tool
@@ -445,10 +445,10 @@ function test()
 
    roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1, shuffledWeights)
    local testAUC = metrics.roc.area(roc_points)
-   print("test AUC:", testAUC)
+   print(string.format("test AUC: %.3f", testAUC))
    print()
 
-   log:write("test AUC: " .. tostring(testAUC) .. "\n")
+   log:write(string.format("test AUC: %.3f\n", testAUC))
    log:write("\n")
    log:flush()
 
