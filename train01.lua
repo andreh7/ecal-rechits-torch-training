@@ -428,13 +428,12 @@ function test()
 
    -- timing
    local time = sys.clock() - startTime
-   time = time / testData:size()
    print("\n")
-   print("time to test 1 sample: " .. (time*1000) .. ' ms')
+   print("time to test 1 sample: " .. (time / testData:size() *1000) .. ' ms')
    print("time for entire test batch:",time / 60.0,"min")
 
    log:write('\n')
-   log:write("time to test 1 sample: " .. tostring(time*1000) .. ' ms\n')
+   log:write("time to test 1 sample: " .. tostring(time / testData:size() *1000) .. ' ms\n')
    log:write("time for entire test batch: " .. tostring(time / 60.0) .. " min\n")
 
    -- write out network outputs, labels and weights
