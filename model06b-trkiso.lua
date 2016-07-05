@@ -107,7 +107,7 @@ model:add(outputModel)
 ----------------------------------------------------------------------
 function makeInput(dataset, rowIndices, inputDataIsSparse)
 
-  batchSize = rowIndices:size()[1]
+  local batchSize = rowIndices:size()[1]
 
   local input = {}
   local recHits
