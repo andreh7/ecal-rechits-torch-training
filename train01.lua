@@ -175,6 +175,10 @@ log:write('loss function: ' .. tostring(criterion) .. "\n")
 
 ----------------------------------------
 
+-- convert the model to cuda
+model:cuda()
+criterion:cuda()
+
 -- print model after the output layer has potentially been modified
 
 print('----------')
