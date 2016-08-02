@@ -13,6 +13,14 @@ nstates = {64,64,128}
 filtsize = 5
 poolsize = 2
 
+-- size of minibatch
+batchSize = 32
+
+-- how many minibatches to unpack at a time
+-- and to store in the GPU (to have fewer
+-- data transfers to the GPU)
+batchesPerSuperBatch = 10388
+
 ----------------------------------------------------------------------
 -- a typical modern convolution network (conv+relu+pool)
 model = nn.Sequential()

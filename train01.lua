@@ -32,19 +32,11 @@ outputDir = 'results/' .. os.date("%Y-%m-%d-%H%M%S")
 
 print('output directory is ' .. outputDir)
 
-batchSize = 32
-
 progressBarSteps = 500
 
 -- if we don't do this, the weights will be double and
 -- the data will be float and we get an error
 torch.setdefaulttensortype('torch.FloatTensor')
-----------------------------------------------------------------------
-
--- round to batch size
-progressBarSteps = math.floor(progressBarSteps / batchSize) * batchSize
-
-
 ----------------------------------------------------------------------
 
 -- writes out a table containing information to calculate
@@ -137,6 +129,20 @@ fout:close()
 dofile(modelFile)
 
 assert(makeInput ~= nil, "must define a function 'makeInput' to prepare input to the model")
+
+if batchSize == nil then
+
+  batchSize = 32
+
+  print("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize))
+  fout:write("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize) .. "\n")
+end
+
+--------------------
+-- round progress bar steps to batch size
+--------------------
+
+progressBarSteps = math.floor(progressBarSteps / batchSize) * batchSize
 
 ----------------------------------------------------------------------
 -- loss function
