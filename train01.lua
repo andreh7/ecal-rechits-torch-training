@@ -130,12 +130,22 @@ dofile(modelFile)
 
 assert(makeInput ~= nil, "must define a function 'makeInput' to prepare input to the model")
 
+assert(makeInputView ~= nil, "must define a function 'makeInputView' to make views of input variables for minibatches")
+
 if batchSize == nil then
 
   batchSize = 32
 
   print("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize))
   fout:write("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize) .. "\n")
+end
+
+if batchesPerSuperBatch == nil then
+
+  batchesPerSuperBatch = 1
+
+  print("WARNING: batchesPerSuperBatch not specified in model file, setting it to" .. tostring(batchesPerSuperBatch))
+  fout:write("WARNING: batchesPerSuperBatch not specified in model file, setting it to" .. tostring(batchesPerSuperBatch) .. "\n")
 end
 
 --------------------
@@ -272,6 +282,16 @@ function train()
    local targets = torch.zeros(batchSize)
    local weights = torch.zeros(batchSize)
 
+   -- for unpacking more than one minibatch worth's on inputs
+   -- and store them on the GPU
+   --
+   -- note that inputs returned by makeInput can actually be quite complex
+   -- so we rely on another custom function which then can just create e.g. a struct/table
+   -- with the views of the (larger) unpacked inputs
+   local unpackedInputs = nil
+
+   local superBatchStart, superBatchEnd
+
    for t = 1,effectiveTrainingSize, batchSize do
       -- call garbage collector
       if (t % 300) == 0 then
@@ -287,11 +307,25 @@ function train()
       local thisEnd = math.min(t + batchSize - 1, trainData:size())
       local thisBatchSize = thisEnd - t + 1
 
-      -- make a list of indices in this batch
-      local rowIndices = shuffle:sub(t,thisEnd)
+      ----------
+      -- create/unpack the inputs on demand
+      ----------
 
-      -- create the inputs
-      local inputs = makeInput(trainData, rowIndices, inputDataIsSparse)
+      if unpackedInputs == nil or t > superBatchEnd then
+        -- unpack another superbatch of inputs
+        superBatchStart = t
+        superBatchEnd = math.min(t + batchesPerSuperBatch * batchSize - 1, effectiveTrainingSize)
+
+        -- make a list of indices in this superbatch
+        local rowIndices = shuffle:sub(superBatchStart, superBatchEnd)
+
+        unpackedInputs = makeInput(trainData, rowIndices, inputDataIsSparse)
+
+      end
+
+      local inputs = makeInputView(unpackedInputs, t - superBatchStart + 1, thisEnd - superBatchStart + 1)
+
+      ----------
 
       for i = t,thisEnd do
 

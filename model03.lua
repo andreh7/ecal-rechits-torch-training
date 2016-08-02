@@ -122,3 +122,13 @@ function makeInput(dataset, rowIndices, inputDataIsSparse)
 end
 
 ----------------------------------------------------------------------
+function makeInputView(recHits, first, last)
+
+  assert(first >= 1)
+  assert(last <= recHits:size()[1])
+
+  return recHits:sub(first,last)
+
+end
+
+----------------------------------------------------------------------
