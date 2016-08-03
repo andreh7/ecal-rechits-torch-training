@@ -31,6 +31,7 @@ cmd:text('Options')
 cmd:option('-model',"",'network model file')
 cmd:option('-data', "",'dataset file')
 cmd:option('-cuda', false, 'use CUDA tensors')
+cmd:option('-opt', 'adam', 'optimizer to use')
 cmd:text()
 
 params = cmd:parse(arg)
@@ -249,10 +250,33 @@ log:write("using " .. trsize .. " train samples and " .. tesize .. " test sample
 
 ----------------------------------------
 
--- ADAM, taking the default values in the optimizer 
--- (which are those from the paper arxiv:1412.6980)
-optimState = { }
-optimMethod = optim.adam
+if params.opt == 'adam' then
+  -- ADAM, taking the default values in the optimizer 
+  -- (which are those from the paper arxiv:1412.6980)
+
+  print("using ADAM")
+  log:write("using ADAM")
+
+  optimState = { }
+  optimMethod = optim.adam
+
+elseif params.opt == 'sgd' then
+  -- stochastic gradient descent
+
+  print("using stochastic gradient descent")
+  log:write("using stochastic gradient descent")
+
+  optimState = {
+        -- learning rate at beginning
+        learningRate = 1e-3,
+        weightDecay = 0,
+        momentum = 0,
+        learningRateDecay = 1e-7
+     }
+  optimMethod = optim.sgd
+else
+  assert(false, "unsupported optimizer '" .. params.opt .. "'")
+end
 
 ----------
 -- function for training steps
