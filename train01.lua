@@ -18,13 +18,45 @@ require 'myutils'
 -- needed for AUC
 metrics = require 'metrics';
 
+----------------------------------------------------------------------
 -- command line arguments
-modelFile   = arg[1]
-datasetFile = arg[2]
+----------------------------------------------------------------------
+
+cmd = torch.CmdLine()
+cmd:text()
+cmd:text()
+cmd:text('Script for training')
+cmd:text()
+cmd:text('Options')
+cmd:option('-model',"",'network model file')
+cmd:option('-data', "",'dataset file')
+cmd:option('-cuda', false, 'use CUDA tensors')
+cmd:text()
+
+params = cmd:parse(arg)
+
+modelFile = params.model
+assert(modelFile ~= "", "must specify a model file with -model")
+
+datasetFile = params.data
+assert(datasetFile ~= "", "must specify a dataset file with -data")
+
 
 ----------------------------------------------------------------------
 -- parameters
 ----------------------------------------------------------------------
+
+-- if we don't do this, the weights will be double and
+-- the data will be float and we get an error
+if params.cuda then
+  torch.setdefaulttensortype('torch.CudaTensor')
+  print("setting default tensor type to torch.CudaTensor")
+else
+  torch.setdefaulttensortype('torch.FloatTensor')
+  print("setting default tensor type to torch.FloatTensor")
+end
+
+----------
 
 -- read data set information
 dofile(datasetFile)
@@ -38,9 +70,6 @@ print('output directory is ' .. outputDir)
 
 progressBarSteps = 500
 
--- if we don't do this, the weights will be double and
--- the data will be float and we get an error
-torch.setdefaulttensortype('torch.CudaTensor')
 ----------------------------------------------------------------------
 
 -- writes out a table containing information to calculate
@@ -175,9 +204,11 @@ log:write('loss function: ' .. tostring(criterion) .. "\n")
 
 ----------------------------------------
 
--- convert the model to cuda
-model:cuda()
-criterion:cuda()
+if params.cuda then
+  -- convert the model to cuda
+  model:cuda()
+  criterion:cuda()
+end
 
 -- print model after the output layer has potentially been modified
 
