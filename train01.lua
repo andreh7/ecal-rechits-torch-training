@@ -87,34 +87,36 @@ function writeROCdata(relFname, targetValues, outputValues, weights)
 
 end -- function
 
-----------------------------------------------------------------------
+----------------------------------------
+-- load datasets
+----------------------------------------
 
-----------
--- parse command line arguments
-----------
+-- if the dataset (or model) file did not provide a custom loading/merging function,
+-- assume a default one
+if datasetLoadFunction == nil then
 
-----------------------------------------------------------------------
+  if inputDataIsSparse then
+    datasetLoadFunction = myutils.loadSparseDataset
+  else
+    datasetLoadFunction = myutils.loadDataset
+  end
+
+end
 
 -- Note: the data, in X, is 3-d: the 1st dim indexes the samples
 -- and the last two dims index the width and height of the samples.
 
+print 'loading dataset'
+trainData, trsize = datasetLoadFunction(train_files, trsize)
+testData,  tesize = datasetLoadFunction(test_files, tesize)
+
 if inputDataIsSparse then
-  print 'loading sparse dataset'
-
-  trainData, trsize = myutils.loadSparseDataset(train_files, trsize)
-  testData,  tesize = myutils.loadSparseDataset(test_files, tesize)
-
   -- TODO: should print the selected value to the log file in case of typos...
   recHitsXoffset = recHitsXoffset or 0
   recHitsYoffset = recHitsYoffset or 0
 
 else
   -- non-sparse rechit format
-  print 'loading dataset'
-
-  trainData, trsize = myutils.loadDataset(train_files, trsize)
-  testData,  tesize = myutils.loadDataset(test_files, tesize)
-
   assert(recHitsXoffset == nil and recHitsYoffset == nil, "rechit center shifting is only supported for sparse data")
 end
 
