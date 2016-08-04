@@ -171,7 +171,7 @@ if batchSize == nil then
   batchSize = 32
 
   print("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize))
-  fout:write("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize) .. "\n")
+  log:write("WARNING: batchSize not specified in model file, setting it to" .. tostring(batchSize) .. "\n")
 end
 
 if batchesPerSuperBatch == nil then
@@ -179,7 +179,7 @@ if batchesPerSuperBatch == nil then
   batchesPerSuperBatch = 1
 
   print("WARNING: batchesPerSuperBatch not specified in model file, setting it to" .. tostring(batchesPerSuperBatch))
-  fout:write("WARNING: batchesPerSuperBatch not specified in model file, setting it to" .. tostring(batchesPerSuperBatch) .. "\n")
+  log:write("WARNING: batchesPerSuperBatch not specified in model file, setting it to" .. tostring(batchesPerSuperBatch) .. "\n")
 end
 
 --------------------
