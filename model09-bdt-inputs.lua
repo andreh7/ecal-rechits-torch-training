@@ -40,7 +40,7 @@ batchSize = 32
 -- how many minibatches to unpack at a time
 -- and to store in the GPU (to have fewer
 -- data transfers to the GPU)
-batchesPerSuperBatch = 6636386 / 32
+batchesPerSuperBatch = math.floor(6636386 / batchSize)
 
 
 ----------------------------------------------------------------------
