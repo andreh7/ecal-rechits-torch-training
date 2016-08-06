@@ -31,7 +31,9 @@ cmd:text('Options')
 cmd:option('-model',"",'network model file')
 cmd:option('-data', "",'dataset file')
 cmd:option('-cuda', false, 'use CUDA tensors')
+cmd:option('-gpu', 1, 'index of GPU to use')
 cmd:option('-opt', 'adam', 'optimizer to use')
+
 cmd:text()
 
 params = cmd:parse(arg)
@@ -52,6 +54,10 @@ assert(datasetFile ~= "", "must specify a dataset file with -data")
 if params.cuda then
   torch.setdefaulttensortype('torch.CudaTensor')
   print("setting default tensor type to torch.CudaTensor")
+
+  print("using GPU",params.gpu)
+  cutorch.setDevice(params.gpu)
+
 else
   torch.setdefaulttensortype('torch.FloatTensor')
   print("setting default tensor type to torch.FloatTensor")
