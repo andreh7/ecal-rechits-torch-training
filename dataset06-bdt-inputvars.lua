@@ -68,7 +68,7 @@ end
 
 ----------------------------------------------------------------------
 
-function datasetLoadFunction(fnames, size)
+function datasetLoadFunction(fnames, size, cuda)
   local data = nil
 
   local totsize = 0
@@ -160,6 +160,17 @@ function datasetLoadFunction(fnames, size)
     end -- appending
 
   end -- loop over files
+
+  ----------
+  -- convert to CUDA tensors if required
+  ----------
+  if cuda then
+    data.labels  = data.labels:cuda()
+    data.weights = data.weights:cuda()
+    data.mvaid   = data.mvaid:cuda()
+  end
+
+  ----------
 
 
   data.size = function() return totsize end
