@@ -358,9 +358,12 @@ function train()
 
    local superBatchStart, superBatchEnd
 
+   local gcCounter = 0
+
    for t = 1,effectiveTrainingSize, batchSize do
-      -- call garbage collector
-      if (t % 300) == 0 then
+      -- call garbage collector from time to time
+      gcCounter = gcCounter + 1
+      if (gcCounter % 300) == 0 then
         collectgarbage()
       end
 
