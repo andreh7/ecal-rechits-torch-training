@@ -113,8 +113,8 @@ end
 -- and the last two dims index the width and height of the samples.
 
 print 'loading dataset'
-trainData, trsize = datasetLoadFunction(train_files, trsize)
-testData,  tesize = datasetLoadFunction(test_files, tesize)
+trainData, trsize = datasetLoadFunction(train_files, trsize, params.cuda)
+testData,  tesize = datasetLoadFunction(test_files, tesize, params.cuda)
 
 if inputDataIsSparse then
   -- TODO: should print the selected value to the log file in case of typos...
