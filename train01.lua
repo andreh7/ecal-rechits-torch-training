@@ -116,6 +116,9 @@ print 'loading dataset'
 trainData, trsize = datasetLoadFunction(train_files, trsize, params.cuda)
 testData,  tesize = datasetLoadFunction(test_files, tesize, params.cuda)
 
+
+print ("trainData=",trainData)
+
 if inputDataIsSparse then
   -- TODO: should print the selected value to the log file in case of typos...
   recHitsXoffset = recHitsXoffset or 0
@@ -473,14 +476,19 @@ function train()
    -- write out network outputs, labels and weights
    -- to a file so that we can calculate the ROC value with some other tool
 
+   print("writing train ROC data")
    writeROCdata('roc-data-train-' .. string.format("%04d", epoch) .. '.t7',
                 shuffledTargets,
                 trainOutput,
                 shuffledWeights)
 
    -- we have values 0 and 1 as class labels
+   print("calculating train ROC points")
+   collectgarbage()
    roc_points, roc_thresholds = metrics.roc.points(trainOutput, shuffledTargets, 0, 1, shuffledWeights)
 
+   print("calculating train AUC")
+   collectgarbage()
    local trainAUC = metrics.roc.area(roc_points)
    print(string.format("train AUC: %.3f", trainAUC))
    log:write(string.format("train AUC: %.3f\n", trainAUC))
@@ -491,6 +499,7 @@ function train()
    log:write('saving model to '.. filename .. "\n")
    torch.save(filename, model)
 
+   print("collecting garbage after train")
    collectgarbage()
 
 end -- function train()
@@ -572,12 +581,18 @@ function test()
 
    -- write out network outputs, labels and weights
    -- to a file so that we can calculate the ROC value with some other tool
+   print("writing test ROC data")
    writeROCdata('roc-data-test-' .. string.format("%04d", epoch) .. '.t7',
                 shuffledTargets,                                      
                 testOutput,
                 shuffledWeights)
 
+   print("calculating test ROC points")
+   collectgarbage()
    roc_points, roc_thresholds = metrics.roc.points(testOutput, shuffledTargets, 0, 1, shuffledWeights)
+
+   print("calculating test AUC")
+   collectgarbage()
    local testAUC = metrics.roc.area(roc_points)
    print(string.format("test AUC: %.3f", testAUC))
    print()
@@ -585,6 +600,9 @@ function test()
    log:write(string.format("test AUC: %.3f\n", testAUC))
    log:write("\n")
    log:flush()
+
+   print("collecting garbage after test")
+   collectgarbage()
 
 end
 
