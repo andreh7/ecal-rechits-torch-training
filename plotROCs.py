@@ -14,6 +14,7 @@ sys.path.append(os.path.expanduser("~aholz/torchio"))
 import torchio
 
 import glob, re
+import numpy as np
 
 #----------------------------------------------------------------------
 
@@ -103,13 +104,21 @@ def readROC(fname):
 
     print "reading",fname
     
-    fin = torchio.InputFile(fname, "binary")
+    if fname.endswith(".npz"):
+        data = np.load(fname)
 
-    data = fin.readObject()
+        weights = data['weight']
+        labels  = data['label']
+        outputs = data['output']
 
-    weights = data['weight'].asndarray()
-    labels  = data['label'].asndarray()
-    outputs = data['output'].asndarray()
+    else:
+        # assume this is a torch file
+        fin = torchio.InputFile(fname, "binary")
+        data = fin.readObject()
+
+        weights = data['weight'].asndarray()
+        labels  = data['label'].asndarray()
+        outputs = data['output'].asndarray()
 
     from sklearn.metrics import roc_curve, auc
 
@@ -175,6 +184,7 @@ def readROCfiles(inputDir, transformation = None):
     #----------
     inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
+    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.npz")) 
 
     if not inputFiles:
         print >> sys.stderr,"no files roc-data-* found, exiting"
@@ -196,6 +206,8 @@ def readROCfiles(inputDir, transformation = None):
         #  roc-data-train-0002.t7
 
         mo = re.match("roc-data-(\S+)-mva\.t7(\.gz|\.bz2)?$", basename)
+        if not mo:
+            mo = re.match("roc-data-(\S+)-mva\.npz$", basename)
 
         if mo:
             sampleType = mo.group(1)
@@ -208,6 +220,8 @@ def readROCfiles(inputDir, transformation = None):
             continue
 
         mo = re.match("roc-data-(\S+)-(\d+)\.t7(\.gz|\.bz2)?$", basename)
+        if not mo:
+            mo = re.match("roc-data-(\S+)-(\d+)\.npz$", basename)
 
         if mo:
             sampleType = mo.group(1)
@@ -238,14 +252,23 @@ def readROCfiles(inputDir, transformation = None):
 def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
     print "reading",inputFname
-    
-    fin = torchio.InputFile(inputFname, "binary")
 
-    data = fin.readObject()
+    if inputFname.endswith(".npz"):
+        # numpy file
+        data = np.load(inputFname)
 
-    weights = data['weight'].asndarray()
-    labels  = data['label'].asndarray()
-    outputs = data['output'].asndarray()
+        weights = data['weight']
+        labels  = data['label']
+        outputs = data['output']
+    else:
+        # assume this is a torch file
+        fin = torchio.InputFile(inputFname, "binary")
+
+        data = fin.readObject()
+
+        weights = data['weight'].asndarray()
+        labels  = data['label'].asndarray()
+        outputs = data['output'].asndarray()
 
     from sklearn.metrics import roc_curve, auc
 
