@@ -52,8 +52,6 @@ model:add(nn.View(ninputs))
 
 for i = 1, numHiddenLayers do
 
-  model:add(nn.ReLU())
-
   if i == 1 then
     model:add(nn.Linear(ninputs, nodesPerHiddenLayer))
   elseif i == numHiddenLayers then
@@ -67,6 +65,10 @@ for i = 1, numHiddenLayers do
     model:add(nn.Linear(nodesPerHiddenLayer, nodesPerHiddenLayer))
 
   end -- if
+
+  if i < numHiddenLayers then
+    model:add(nn.ReLU())
+  end
 
 end -- loop over hidden layers
 
