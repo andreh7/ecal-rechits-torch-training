@@ -168,7 +168,7 @@ def readDescription(inputDir):
 
 #----------------------------------------------------------------------
 
-def readROCfiles(inputDir, transformation = None, includeCached = False):
+def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoch = None):
     # returns mvaROC, rocValues
     # which are dicts of 'test'/'train' to the single value
     # (for MVAid) or a dict epoch -> values (rocValues)
@@ -235,10 +235,11 @@ def readROCfiles(inputDir, transformation = None, includeCached = False):
             sampleType = mo.group(1)
             epoch = int(mo.group(2), 10)
 
-            if rocValues[sampleType].has_key(epoch):
-                print "WARNING: setting ROC value for sample type",sampleType,"for epoch",epoch,"more than once"
+            if maxEpoch != None and epoch <= maxEpoch:
+                if rocValues[sampleType].has_key(epoch):
+                    print "WARNING: setting ROC value for sample type",sampleType,"for epoch",epoch,"more than once"
 
-            rocValues[sampleType][epoch] = transformation(inputFname)
+                rocValues[sampleType][epoch] = transformation(inputFname)
             continue
 
         print >> sys.stderr,"WARNING: unmatched filename",inputFname
@@ -309,12 +310,12 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
     highestTPRs.append(highestTPR)
 
 #----------------------------------------------------------------------
-def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
+def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
     
     # read only the file names
-    mvaROC, rocFnames = readROCfiles(inputDir)
+    mvaROC, rocFnames = readROCfiles(inputDir, maxEpoch = maxEpoch)
 
     #----------
 
@@ -404,6 +405,13 @@ if __name__ == '__main__':
                       help="do not look at train values",
                       )
 
+    parser.add_option("--max-epoch",
+                      dest = 'maxEpoch',
+                      type = int,
+                      default = None,
+                      help="last epoch to plot (useful e.g. if the training diverges at some point)",
+                      )
+
     (options, ARGV) = parser.parse_args()
 
     assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
@@ -418,13 +426,13 @@ if __name__ == '__main__':
 
     if options.last or options.both:
 
-        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain)
+        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch)
 
         # zoomed version
         # autoscaling in y with x axis range manually
         # set seems not to work, so we implement
         # something ourselves..
-        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain)
+        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch)
 
 
     if not options.last or options.both:
@@ -432,7 +440,7 @@ if __name__ == '__main__':
         # plot evolution of area under ROC curve vs. epoch
         #----------
 
-        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True)
+        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True, maxEpoch = options.maxEpoch)
 
         pylab.figure(facecolor='white')
 
