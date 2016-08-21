@@ -182,13 +182,16 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
         transformation = lambda fname: fname
 
     #----------
-    inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
-    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
-    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.npz")) 
+    inputFiles = []
 
     if includeCached:
+        # read cached version first
         inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.cached-auc.py")) 
         inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2.cached-auc.py")) 
+
+    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
+    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
+    inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.npz")) 
 
     if not inputFiles:
         print >> sys.stderr,"no files roc-data-* found, exiting"
@@ -237,7 +240,9 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
 
             if maxEpoch != None and epoch <= maxEpoch:
                 if rocValues[sampleType].has_key(epoch):
-                    print "WARNING: setting ROC value for sample type",sampleType,"for epoch",epoch,"more than once"
+                    # skip reading this file: we already have a value
+                    # (priority is given to the cached files)
+                    continue
 
                 rocValues[sampleType][epoch] = transformation(inputFname)
             continue
