@@ -238,7 +238,7 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
             sampleType = mo.group(1)
             epoch = int(mo.group(2), 10)
 
-            if maxEpoch != None and epoch <= maxEpoch:
+            if maxEpoch == None or epoch <= maxEpoch:
                 if rocValues[sampleType].has_key(epoch):
                     # skip reading this file: we already have a value
                     # (priority is given to the cached files)
