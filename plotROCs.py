@@ -169,9 +169,9 @@ def readDescription(inputDir):
 #----------------------------------------------------------------------
 
 def readROCfiles(inputDir, transformation = None):
-    # returns mvaROC, epochNumbers, rocValues
+    # returns mvaROC, rocValues
     # which are dicts of 'test'/'train' to the single value
-    # (for MVAid) or a list of values (epochNumbers and rocValues)
+    # (for MVAid) or a dict epoch -> values (rocValues)
     #
     # transformation is a function taking the file name 
     # which is run on each file
@@ -191,8 +191,9 @@ def readROCfiles(inputDir, transformation = None):
         sys.exit(1)
 
     # ROCs values and epoch numbers for training and test
-    rocValues    = dict(train = [], test = [])
-    epochNumbers = dict(train = [], test = [])
+    # first index is 'train or 'test'
+    # second index is epoch number
+    rocValues    = dict(train = {}, test = {})
 
     # MVA id ROC areas
     mvaROC = dict(train = None, test = None)
@@ -227,25 +228,15 @@ def readROCfiles(inputDir, transformation = None):
             sampleType = mo.group(1)
             epoch = int(mo.group(2), 10)
 
-            assert epochNumbers.has_key(sampleType)
-            assert not epoch in epochNumbers[sampleType]
+            assert not rocValues[sampleType].has_key(epoch)
 
-            rocValues[sampleType].append(transformation(inputFname))
-            epochNumbers[sampleType].append(epoch)
+            rocValues[sampleType][epoch] = transformation(inputFname)
             continue
 
 
         print >> sys.stderr,"WARNING: unmatched filename",inputFname
 
-    # sort by increasing epochs
-    for sample in epochNumbers.keys():
-
-        # in some cases we have e.g. no files for one of the samples (train or test)
-        # avoid zip raising an exception
-        if len(epochNumbers[sample]) > 0 and len(rocValues[sample]) > 0:
-            epochNumbers[sample], rocValues[sample] = zip(*sorted(zip(epochNumbers[sample], rocValues[sample])))        
-    
-    return mvaROC, epochNumbers, rocValues
+    return mvaROC, rocValues
 
 #----------------------------------------------------------------------
 
@@ -282,27 +273,23 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
 #----------------------------------------------------------------------
 
-def findLastCompleteEpoch(epochNumbers, ignoreTrain):
+def findLastCompleteEpoch(rocFnames, ignoreTrain):
     
-    if not ignoreTrain and not epochNumbers['train']:
+    trainEpochNumbers = sorted(rocFnames['train'].keys())
+    testEpochNumbers  = sorted(rocFnames['test'].keys())
+
+    if not ignoreTrain and not trainEpochNumbers:
         print >> sys.stderr,"WARNING: no training files found"
         return None
 
-    if not epochNumbers['test']:
+    if not testEpochNumbers:
         print >> sys.stderr,"WARNING: no test files found"
         return None
 
-    for sample in ('train','test'):
-        if ignoreTrain and sample == 'train':
-            continue
-
-        assert epochNumbers[sample][0] == 1
-        assert len(epochNumbers[sample]) == epochNumbers[sample][-1]
-
-    retval = epochNumbers['test'][-1]
+    retval = testEpochNumbers[-1]
     
     if not ignoreTrain:
-        retval = min(epochNumbers['train'][-1], retval)
+        retval = min(trainEpochNumbers[-1], retval)
     return retval
 
 #----------------------------------------------------------------------
@@ -320,14 +307,14 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
     pylab.figure(facecolor='white')
     
     # read only the file names
-    mvaROC, epochNumbers, rocFnames = readROCfiles(inputDir)
+    mvaROC, rocFnames = readROCfiles(inputDir)
 
     #----------
 
     # find the highest epoch for which both
     # train and test samples are available
 
-    epochNumber = findLastCompleteEpoch(epochNumbers, ignoreTrain)
+    epochNumber = findLastCompleteEpoch(rocFnames, ignoreTrain)
 
     highestTPRs = []
     #----------
@@ -345,7 +332,7 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False):
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber - 1], sample + " (auc {auc:.3f})", color, '-', 2)
+            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], sample + " (auc {auc:.3f})", color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
@@ -436,7 +423,7 @@ if __name__ == '__main__':
     if not options.last or options.both:
         # plot evolution of area under ROC curve vs. epoch
 
-        mvaROC, epochNumbers, rocValues = readROCfiles(inputDir, readROC)
+        mvaROC, rocValues = readROCfiles(inputDir, readROC)
 
         pylab.figure(facecolor='white')
 
@@ -448,10 +435,9 @@ if __name__ == '__main__':
             if options.ignoreTrain and sample == 'train':
                 continue
 
-            assert len(epochNumbers[sample]) == len(rocValues[sample])
-
-            # these are already sorted by ascending epoch
-            epochs, aucs = epochNumbers[sample], rocValues[sample]
+            # sorted by ascending epoch
+            epochs = sorted(rocValues[sample].keys())
+            aucs = [ rocValues[sample][epoch] for epoch in epochs ]
 
             pylab.plot(epochs, aucs, '-o', label = sample + " (last auc=%.3f)" % aucs[-1], color = color, linewidth = 2)
 
