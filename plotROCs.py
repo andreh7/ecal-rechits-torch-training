@@ -94,12 +94,11 @@ def readROC(fname):
     # 
     # also looks for a cached file
 
-
-    cachedFname = fname + ".cached-auc.py"
-
-    if os.path.exists(cachedFname):
-        print "reading",cachedFname
-        auc = float(open(cachedFname).read())
+    
+    if fname.endswith(".cached-auc.py"):
+        # read the cached file
+        print "reading",fname
+        auc = float(open(fname).read())
         return auc
 
     print "reading",fname
@@ -127,6 +126,7 @@ def readROC(fname):
     aucValue = auc(fpr, tpr, reorder = True)
 
     # write to cache
+    cachedFname = fname + ".cached-auc.py"
     fout = open(cachedFname,"w")
     print >> fout,aucValue
     fout.close()
@@ -168,7 +168,7 @@ def readDescription(inputDir):
 
 #----------------------------------------------------------------------
 
-def readROCfiles(inputDir, transformation = None):
+def readROCfiles(inputDir, transformation = None, includeCached = False):
     # returns mvaROC, rocValues
     # which are dicts of 'test'/'train' to the single value
     # (for MVAid) or a dict epoch -> values (rocValues)
@@ -185,6 +185,10 @@ def readROCfiles(inputDir, transformation = None):
     inputFiles = glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.npz")) 
+
+    if includeCached:
+        inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.cached-auc.py")) 
+        inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2.cached-auc.py")) 
 
     if not inputFiles:
         print >> sys.stderr,"no files roc-data-* found, exiting"
@@ -224,15 +228,18 @@ def readROCfiles(inputDir, transformation = None):
         if not mo:
             mo = re.match("roc-data-(\S+)-(\d+)\.npz$", basename)
 
+        if not mo and includeCached:
+            mo = re.match("roc-data-(\S+)-(\d+)\.t7(\.gz|\.bz2)?\.cached-auc\.py$", basename)
+
         if mo:
             sampleType = mo.group(1)
             epoch = int(mo.group(2), 10)
 
-            assert not rocValues[sampleType].has_key(epoch)
+            if rocValues[sampleType].has_key(epoch):
+                print "WARNING: setting ROC value for sample type",sampleType,"for epoch",epoch,"more than once"
 
             rocValues[sampleType][epoch] = transformation(inputFname)
             continue
-
 
         print >> sys.stderr,"WARNING: unmatched filename",inputFname
 
@@ -421,9 +428,11 @@ if __name__ == '__main__':
 
 
     if not options.last or options.both:
+        #----------
         # plot evolution of area under ROC curve vs. epoch
+        #----------
 
-        mvaROC, rocValues = readROCfiles(inputDir, readROC)
+        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True)
 
         pylab.figure(facecolor='white')
 
