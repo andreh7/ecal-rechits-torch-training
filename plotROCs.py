@@ -188,6 +188,7 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
         # read cached version first
         inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.cached-auc.py")) 
         inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2.cached-auc.py")) 
+        inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.npz.cached-auc.py")) 
 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7")) 
     inputFiles += glob.glob(os.path.join(inputDir, "roc-data-*.t7.bz2")) 
@@ -233,6 +234,9 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
 
         if not mo and includeCached:
             mo = re.match("roc-data-(\S+)-(\d+)\.t7(\.gz|\.bz2)?\.cached-auc\.py$", basename)
+
+        if not mo and includeCached:
+            mo = re.match("roc-data-(\S+)-(\d+)\.npz\.cached-auc\.py$", basename)
 
         if mo:
             sampleType = mo.group(1)
