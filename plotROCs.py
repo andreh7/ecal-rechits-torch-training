@@ -451,6 +451,8 @@ if __name__ == '__main__':
 
         mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True, maxEpoch = options.maxEpoch)
 
+        print "plotting AUC evolution"
+
         pylab.figure(facecolor='white')
 
         for sample, color in (
