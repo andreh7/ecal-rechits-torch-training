@@ -136,6 +136,10 @@ for dirname in ARGV:
     for sample in ('train', 'test'):
         lines = outputFiles[sample]
 
+        if not lines:
+            print >> sys.stderr,"WARNING: no %s files found" % sample
+            continue
+
         lines.sort(key = lambda line: line[0])
             
         # keep the latest one
