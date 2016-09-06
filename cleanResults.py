@@ -75,11 +75,15 @@ for dirname in ARGV:
         # training output per event files
         #----------
 
-        if fname in ("roc-data-test-mva.t7", "roc-data-train-mva.t7"):
+        if fname in ("roc-data-test-mva.t7", "roc-data-train-mva.t7",
+                     "roc-data-test-mva.npz", "roc-data-train-mva.npz",
+                     ):
             filesToKeep.append(fullFname)
             continue
 
         mo = re.match("roc-data-(train|test)-(\d+)\.t7$", fname)
+        if not mo:
+            mo = re.match("roc-data-(train|test)-(\d+)\.npz$", fname)
         if mo:
             # add it to the list
             sample = mo.group(1)
@@ -89,7 +93,7 @@ for dirname in ARGV:
             continue
 
         # AUC cached files
-        if fname.endswith(".t7.cached-auc.py"):
+        if fname.endswith(".t7.cached-auc.py") or fname.endswith(".npz.cached-auc.py"):
             filesToKeep.append(fullFname)
             continue
 
@@ -97,6 +101,10 @@ for dirname in ARGV:
         # model files
         #----------
         mo = re.match("model(\d+)\.net$", fname)
+
+        if not mo:
+            mo = re.match("model-(\d+)\.npz$", fname)
+
         if mo:
             modelNumber = int(mo.group(1), 10)
 
