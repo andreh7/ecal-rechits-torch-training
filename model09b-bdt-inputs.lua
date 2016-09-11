@@ -22,13 +22,15 @@ noutputs = 1
 --       phiWidth : FloatTensor - size: 1299819
 --       covIEtaIPhi : FloatTensor - size: 1299819
 --       etaWidth : FloatTensor - size: 1299819
---       esEffSigmaRR : FloatTensor - size: 1299819
+--       esEffSigmaRR : FloatTensor - size: 1299819      -- not available in the barrel
 --       r9 : FloatTensor - size: 1299819
 --       pfChgIso03 : FloatTensor - size: 1299819
 --       pfChgIso03worst : FloatTensor - size: 1299819
 --     }
 
-ninputs = 13
+-- ninputs = 13
+-- barrel
+ninputs = 12
 
 nodesPerHiddenLayer = 100
 

@@ -60,7 +60,7 @@ end
 --       phiWidth : FloatTensor - size: 431989
 --       covIEtaIPhi : FloatTensor - size: 431989
 --       etaWidth : FloatTensor - size: 431989
---       esEffSigmaRR : FloatTensor - size: 431989
+--       esEffSigmaRR : FloatTensor - size: 431989   -- not available in the barrel
 --       r9 : FloatTensor - size: 431989
 --       pfChgIso03 : FloatTensor - size: 431989
 --       pfChgIso03worst : FloatTensor - size: 431989
@@ -113,8 +113,13 @@ function datasetLoadFunction(fnames, size, cuda)
       -- fill the individual variable names
       local varname
       for varname in pairs(loaded.phoIdInput) do
-        table.insert(sortedVarnames, varname)
+
+        -- this variable is not meaningful in the barrel
+        if varname ~= 'esEffSigmaRR' then
+          table.insert(sortedVarnames, varname)
+        end
       end
+
       table.sort(sortedVarnames)
       numvars = #sortedVarnames
 
