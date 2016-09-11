@@ -40,6 +40,13 @@ parser.add_option("--min-age",
                   help="minimum age in minutes below which a file will not be deleted. Floating point values are accepted.",
                   )
 
+parser.add_option("--keep-epoch",
+                  dest="keepEpochList",
+                  default = None,
+                  type = str,
+                  help="comma separated list of epoch numbers to keep anyway",
+                  )
+
 (options, ARGV) = parser.parse_args()
 
 if len(ARGV) < 1:
@@ -48,6 +55,9 @@ if len(ARGV) < 1:
 
 # convert minimum age to seconds
 options.minAge *= 60.0
+
+if options.keepEpochList != None:
+    options.keepEpochList = [ int(x) for x in options.keepEpochList.split(',') ]
 
 #----------------------------------------
 
@@ -127,7 +137,14 @@ for dirname in ARGV:
         filesToKeep.append(modelFiles[-1][1])
 
         for line in modelFiles[:-1]:
-            filesToDelete.append(line[1])
+
+            epoch, fname = line
+
+            if options.keepEpochList != None and epoch in options.keepEpochList:
+                # keep this epoch anyway
+                filesToKeep.append(fname)
+            else:
+                filesToDelete.append(fname)
 
     #----------
     # keep only output files for which there is a cached
@@ -147,16 +164,24 @@ for dirname in ARGV:
 
         # keep previous ones if there is no cached file
         for line in lines[:-1]:
-            fname = line[1]
+            epoch, fname = line
+
+            keep = False
+
+            if options.keepEpochList != None and epoch in options.keepEpochList:
+                # keep this epoch anyway
+                keep = True
             
             cachedFname = fname + ".cached-auc.py"
-            if cachedFname in filesToKeep:
-                # we can delete this file
-                filesToDelete.append(fname)
-            else:
+            if not cachedFname in filesToKeep:
+                # we must keep this file, there is no cached version
+                keep = True
+
+            if keep:
                 # we need to keep this file
                 filesToKeep.append(fname)
-
+            else:
+                filesToDelete.append(fname)
 
     #----------
     # apply minimum age criterion to candidates to be deleted
