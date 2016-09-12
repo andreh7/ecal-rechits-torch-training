@@ -319,7 +319,7 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
     highestTPRs.append(highestTPR)
 
 #----------------------------------------------------------------------
-def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None):
+def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None, savePlots = False):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
     
@@ -381,6 +381,17 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
 
         pylab.title(description)
 
+    if savePlots:
+        for suffix in (".png", ".pdf", ".svg"):
+            outputFname = os.path.join(inputDir, "last-auc")
+
+            if xmax != None:
+                outputFname += "-%.2f" % xmax
+
+            outputFname += suffix
+
+            pylab.savefig(outputFname)
+            print "saved figure to",outputFname
 
 #----------------------------------------------------------------------
 # main
@@ -421,6 +432,13 @@ if __name__ == '__main__':
                       help="last epoch to plot (useful e.g. if the training diverges at some point)",
                       )
 
+    parser.add_option("--save-plots",
+                      dest = 'savePlots',
+                      default = False,
+                      action="store_true",
+                      help="save plots in input directory",
+                      )
+
     (options, ARGV) = parser.parse_args()
 
     assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
@@ -435,13 +453,13 @@ if __name__ == '__main__':
 
     if options.last or options.both:
 
-        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch)
+        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, savePlots = options.savePlots)
 
         # zoomed version
         # autoscaling in y with x axis range manually
         # set seems not to work, so we implement
         # something ourselves..
-        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch)
+        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, savePlots = options.savePlots)
 
 
     if not options.last or options.both:
@@ -486,6 +504,12 @@ if __name__ == '__main__':
 
         addTimestamp(inputDir)
         addDirname(inputDir)
+
+        if options.savePlots:
+            for suffix in (".png", ".pdf", ".svg"):
+                outputFname = os.path.join(inputDir, "auc-evolution" + suffix)
+                pylab.savefig(outputFname)
+                print "saved figure to",outputFname
 
     #----------
 
