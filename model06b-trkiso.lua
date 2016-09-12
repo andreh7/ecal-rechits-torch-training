@@ -169,3 +169,17 @@ function makeInput(dataset, rowIndices, inputDataIsSparse)
 end
 
 ----------------------------------------------------------------------
+function makeInputView(inputValues, first, last)
+
+  assert(first >= 1)
+  assert(last <= inputValues[1]:size()[1])
+
+  return { inputValues[1]:sub(first,last),
+           inputValues[2]:sub(first,last),
+           inputValues[3]:sub(first,last)
+           }
+  
+
+end
+
+----------------------------------------------------------------------
