@@ -10,7 +10,7 @@ import pylab
 
 #----------------------------------------------------------------------
 
-def doPlot(inputdir, maxEpoch = None):
+def doPlot(inputDir, maxEpoch = None):
 
     description = plotROCs.readDescription(inputDir)
 
