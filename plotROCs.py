@@ -513,6 +513,23 @@ if __name__ == '__main__':
 
     #----------
 
+    if not options.last or options.both:
+
+        #----------
+        # plot correlation of train and test AUC
+        #----------
+
+        import plotAUCcorr
+
+        plotAUCcorr.doPlot(inputDir, maxEpoch = options.maxEpoch)
+
+        if options.savePlots:
+            for suffix in (".png", ".pdf", ".svg"):
+                outputFname = os.path.join(inputDir, "auc-corr" + suffix)
+                pylab.savefig(outputFname)
+                print "saved figure to",outputFname
+
+    #----------
 
     pylab.show()
 
