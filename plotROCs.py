@@ -355,14 +355,14 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], sample + " (auc {auc:.3f})", color, '-', 2)
+            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], "NN " + sample + " (auc {auc:.3f})", color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            fpr, tpr, dummy = drawSingleROCcurve(fname, "MVA " + sample + " (auc {auc:.3f})", color, '--', 1)
+            fpr, tpr, dummy = drawSingleROCcurve(fname, "BDT " + sample + " (auc {auc:.3f})", color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of false positives')
@@ -506,13 +506,13 @@ if __name__ == '__main__':
             epochs = sorted(rocValues[sample].keys())
             aucs = [ rocValues[sample][epoch] for epoch in epochs ]
 
-            pylab.plot(epochs, aucs, '-o', label = sample + " (last auc=%.3f)" % aucs[-1], color = color, linewidth = 2)
+            pylab.plot(epochs, aucs, '-o', label = "NN " + sample + " (last auc=%.3f)" % aucs[-1], color = color, linewidth = 2)
 
             # draw a line for the MVA id ROC if available
             auc = mvaROC[sample]
             if auc != None:
                 pylab.plot( pylab.gca().get_xlim(), [ auc, auc ], '--', color = color, 
-                            label = "MVA (auc=%.3f) %s" % (auc, sample))
+                            label = "BDT %s (auc=%.3f)" % (sample, auc))
 
         pylab.grid()
         pylab.xlabel('training epoch')
