@@ -168,7 +168,8 @@ def readDescription(inputDir):
 
 #----------------------------------------------------------------------
 
-def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoch = None):
+def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoch = None,
+                 excludedEpochs = None):
     # returns mvaROC, rocValues
     # which are dicts of 'test'/'train' to the single value
     # (for MVAid) or a dict epoch -> values (rocValues)
@@ -243,10 +244,12 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
             epoch = int(mo.group(2), 10)
 
             if maxEpoch == None or epoch <= maxEpoch:
-                if rocValues[sampleType].has_key(epoch):
-                    # skip reading this file: we already have a value
-                    # (priority is given to the cached files)
-                    continue
+                if excludedEpochs == None or not epoch in excludedEpochs:
+
+                    if rocValues[sampleType].has_key(epoch):
+                        # skip reading this file: we already have a value
+                        # (priority is given to the cached files)
+                        continue
 
                 rocValues[sampleType][epoch] = transformation(inputFname)
             continue
@@ -319,12 +322,15 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
     highestTPRs.append(highestTPR)
 
 #----------------------------------------------------------------------
-def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None, savePlots = False):
+def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None, 
+             excludedEpochs = None,
+             savePlots = False):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
     
     # read only the file names
-    mvaROC, rocFnames = readROCfiles(inputDir, maxEpoch = maxEpoch)
+    mvaROC, rocFnames = readROCfiles(inputDir, maxEpoch = maxEpoch, 
+                                     excludedEpochs = excludedEpochs)
 
     #----------
 
@@ -432,6 +438,13 @@ if __name__ == '__main__':
                       help="last epoch to plot (useful e.g. if the training diverges at some point)",
                       )
 
+    parser.add_option("--exclude-epochs",
+                      dest = 'excludedEpochs',
+                      type = str,
+                      default = None,
+                      help="comma separated list of epochs to ignore (e.g. in case of problematic/missing output files)",
+                      )
+
     parser.add_option("--save-plots",
                       dest = 'savePlots',
                       default = False,
@@ -445,6 +458,9 @@ if __name__ == '__main__':
 
     inputDir = ARGV.pop(0)
 
+    if options.excludedEpochs != None:
+        options.excludedEpochs = [ int(x) for x in options.excludedEpochs.split(',') ]
+
     #----------
 
     description = readDescription(inputDir)
@@ -453,13 +469,17 @@ if __name__ == '__main__':
 
     if options.last or options.both:
 
-        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, savePlots = options.savePlots)
+        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
+                 excludedEpochs = options.excludedEpochs,
+                 savePlots = options.savePlots)
 
         # zoomed version
         # autoscaling in y with x axis range manually
         # set seems not to work, so we implement
         # something ourselves..
-        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, savePlots = options.savePlots)
+        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
+                 excludedEpochs = options.excludedEpochs,
+                 savePlots = options.savePlots)
 
 
     if not options.last or options.both:
@@ -467,7 +487,8 @@ if __name__ == '__main__':
         # plot evolution of area under ROC curve vs. epoch
         #----------
 
-        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True, maxEpoch = options.maxEpoch)
+        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True, maxEpoch = options.maxEpoch,
+                                         excludedEpochs = options.excludedEpochs)
 
         print "plotting AUC evolution"
 
@@ -521,7 +542,8 @@ if __name__ == '__main__':
 
         import plotAUCcorr
 
-        plotAUCcorr.doPlot(inputDir, maxEpoch = options.maxEpoch)
+        plotAUCcorr.doPlot(inputDir, maxEpoch = options.maxEpoch,
+                           excludedEpochs = options.excludedEpochs)
 
         if options.savePlots:
             for suffix in (".png", ".pdf", ".svg"):

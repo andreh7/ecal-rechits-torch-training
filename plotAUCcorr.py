@@ -10,7 +10,7 @@ import pylab
 
 #----------------------------------------------------------------------
 
-def doPlot(inputDir, maxEpoch = None):
+def doPlot(inputDir, maxEpoch = None, excludedEpochs = None):
 
     description = plotROCs.readDescription(inputDir)
 
@@ -18,7 +18,8 @@ def doPlot(inputDir, maxEpoch = None):
     # plot evolution of area under ROC curve vs. epoch
     #----------
 
-    mvaROC, rocValues = plotROCs.readROCfiles(inputDir, plotROCs.readROC, includeCached = True, maxEpoch = maxEpoch)
+    mvaROC, rocValues = plotROCs.readROCfiles(inputDir, plotROCs.readROC, includeCached = True, maxEpoch = maxEpoch,
+                                              excludedEpochs = excludedEpochs)
 
     pylab.figure(facecolor='white')
 
