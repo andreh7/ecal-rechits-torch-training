@@ -19,6 +19,7 @@ import numpy as np
 #----------------------------------------------------------------------
 
 def addTimestamp(inputDir, x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
+    return
 
     import pylab, time
 
@@ -55,6 +56,7 @@ def addTimestamp(inputDir, x = 0.0, y = 1.07, ha = 'left', va = 'bottom'):
 
     
 def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
+    return
 
     import pylab
 
@@ -72,6 +74,7 @@ def addDirname(inputDir, x = 1.0, y = 1.07, ha = 'right', va = 'bottom'):
 #----------------------------------------------------------------------
 
 def addNumEvents(numEventsTrain, numEventsTest):
+    return
 
     for numEvents, label, x0, halign in (
         (numEventsTrain, 'train', 0.00, 'left'),
