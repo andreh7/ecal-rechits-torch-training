@@ -358,14 +358,14 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], "NN " + sample + " (auc {auc:.3f})", color, '-', 2)
+            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], "NN " + sample, color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            fpr, tpr, dummy = drawSingleROCcurve(fname, "BDT " + sample + " (auc {auc:.3f})", color, '--', 1)
+            fpr, tpr, dummy = drawSingleROCcurve(fname, "BDT " + sample, color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of false positives')
