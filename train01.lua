@@ -282,7 +282,7 @@ elseif params.opt == 'sgd' then
         learningRate = 1e-3,
         weightDecay = 0,
         momentum = 0,
-        learningRateDecay = 1e-7
+        learningRateDecay = 1e-7 * batchSize
      }
   optimMethod = optim.sgd
 else
