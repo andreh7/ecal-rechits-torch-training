@@ -94,7 +94,6 @@ def readROC(fname):
     # 
     # also looks for a cached file
 
-    
     if fname.endswith(".cached-auc.py"):
         # read the cached file
         print "reading",fname
@@ -130,6 +129,12 @@ def readROC(fname):
     fout = open(cachedFname,"w")
     print >> fout,aucValue
     fout.close()
+
+    # also copy the timestamp so that we can 
+    # use it for estimating the time elapsed
+    # for the plot
+    modTime = os.path.getmtime(fname)
+    os.utime(cachedFname, (modTime, modTime))
 
     return aucValue
 
