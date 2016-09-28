@@ -329,7 +329,9 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
 #----------------------------------------------------------------------
 def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None, 
              excludedEpochs = None,
-             savePlots = False):
+             savePlots = False,
+             legendLocation = None
+             ):
     # plot ROC curve for last epoch only
     pylab.figure(facecolor='white')
     
@@ -379,7 +381,7 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
         pylab.ylim(ymax = 1.1 * max(highestTPRs))
 
     pylab.grid()
-    pylab.legend(loc = 'lower right')
+    pylab.legend(loc = legendLocation)
 
     addTimestamp(inputDir)
     addDirname(inputDir)
@@ -457,6 +459,13 @@ if __name__ == '__main__':
                       help="save plots in input directory",
                       )
 
+    parser.add_option("--legend-loc",
+                      dest = 'legendLocation',
+                      default = 'lower right',
+                      help="location of legend in plots",
+                      )
+
+
     (options, ARGV) = parser.parse_args()
 
     assert len(ARGV) == 1, "usage: plotROCs.py result-directory"
@@ -476,7 +485,8 @@ if __name__ == '__main__':
 
         drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
                  excludedEpochs = options.excludedEpochs,
-                 savePlots = options.savePlots)
+                 savePlots = options.savePlots,
+                 legendLocation = options.legendLocation)
 
         # zoomed version
         # autoscaling in y with x axis range manually
@@ -484,7 +494,9 @@ if __name__ == '__main__':
         # something ourselves..
         drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
                  excludedEpochs = options.excludedEpochs,
-                 savePlots = options.savePlots)
+                 savePlots = options.savePlots,
+                 legendLocation = options.legendLocation
+                 )
 
 
     if not options.last or options.both:
@@ -523,7 +535,7 @@ if __name__ == '__main__':
         pylab.xlabel('training epoch')
         pylab.ylabel('AUC')
 
-        pylab.legend(loc = 'lower right')
+        pylab.legend(loc = options.legendLocation)
 
         if description != None:
             pylab.title(description)
