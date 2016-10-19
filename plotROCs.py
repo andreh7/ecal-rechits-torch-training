@@ -337,7 +337,7 @@ def plotGradientMagnitudes(inputDir, mode):
     if not epochToGradientMagnitudes:
         return False
 
-    pylab.figure()
+    pylab.figure(facecolor='white')
 
     # median number of gradient evaluations per epoch
     # (for filling in missing ones)
