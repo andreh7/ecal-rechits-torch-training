@@ -298,6 +298,90 @@ def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
 
 #----------------------------------------------------------------------
 
+def plotGradientMagnitudes(inputDir, mode):
+
+    # @param mode can be 
+    #    'stat'   plot the median/mean and error bars
+    #    'detail' plot the actual gradient magnitude values
+    #
+    # @return True if something was plotted
+
+    inputFiles = glob.glob(os.path.join(inputDir, "gradient-magnitudes-*.npz"))
+    
+    # maps from epoch number to gradient magnitudes
+    epochToGradientMagnitudes = {}
+
+    # sort by epoch number
+    for inputFname in inputFiles:
+
+        basename = os.path.basename(inputFname)
+
+        # example names:
+        #  roc-data-test-mva.t7
+        #  roc-data-train-0002.t7
+
+        mo = re.match("gradient-magnitudes-(\d+).npz$", basename)
+        if not mo:
+            print >> sys.stderr,"warning: skipping",inputFname
+            continue
+        epoch = int(mo.group(1))
+        
+        thisData = np.load(inputFname)['gradientMagnitudes']
+
+        assert not epoch in epochToGradientMagnitudes
+
+        epochToGradientMagnitudes[epoch] = thisData
+
+    # end of loop over input files
+
+    if not epochToGradientMagnitudes:
+        return False
+
+    pylab.figure()
+
+    # median number of gradient evaluations per epoch
+    # (for filling in missing ones)
+    # normally they should all be the same
+    medianLength = np.median(
+        [ len(x) for x in epochToGradientMagnitudes.values() ]
+        )
+
+    epochs = sorted(epochToGradientMagnitudes.keys())
+
+
+    if mode == 'detail':
+        # plot epoch by epoch with different colors
+        for epoch in epochs:
+            yvalues = epochToGradientMagnitudes[epoch]
+
+            # choose x axis normalization such that each epoch
+            # corresponds to an interval of one
+            xvalues = np.linspace(epoch, epoch + 1,
+                                  num = len(yvalues),
+                                  endpoint = False)
+
+            pylab.plot(xvalues, yvalues)
+
+    elif mode == 'stat':
+        # plot mean and standard deviations
+        xvalues = epochs
+
+        yvalues = [ np.mean(epochToGradientMagnitudes[epoch]) for epoch in epochs ]
+        yerrs   = [ np.std(epochToGradientMagnitudes[epoch]) for epoch in epochs ]
+
+        pylab.errorbar(xvalues, yvalues, yerr = yerrs)
+
+    else:
+        raise Exception("unsupported mode " + mode)
+
+    pylab.xlabel('epoch')
+    pylab.ylabel('gradient magnitude')
+    pylab.grid()
+
+    return True
+
+#----------------------------------------------------------------------
+
 def findLastCompleteEpoch(rocFnames, ignoreTrain):
     
     trainEpochNumbers = sorted(rocFnames['train'].keys())
@@ -567,6 +651,20 @@ if __name__ == '__main__':
                 outputFname = os.path.join(inputDir, "auc-corr" + suffix)
                 pylab.savefig(outputFname)
                 print "saved figure to",outputFname
+
+
+        #----------
+        # plot gradient magnitudes
+        #----------
+
+        plotted = plotGradientMagnitudes(inputDir, mode = 'stat')
+
+        if plotted and options.savePlots:
+            for suffix in (".png", ".pdf", ".svg"):
+                outputFname = os.path.join(inputDir, "gradient-magnitude" + suffix)
+                pylab.savefig(outputFname)
+                print "saved figure to",outputFname
+
 
     #----------
 
