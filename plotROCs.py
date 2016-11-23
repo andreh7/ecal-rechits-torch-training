@@ -376,7 +376,16 @@ def plotGradientMagnitudes(inputDir, mode):
 
     pylab.xlabel('epoch')
     pylab.ylabel('gradient magnitude')
+
     pylab.grid()
+
+    # minor ticks to indicate start of epochs
+    ax = pylab.gca()
+    ax.set_xticks(epochs, minor = True)
+    ax.grid(which='minor', alpha=0.2)                                                
+
+
+
 
     return True
 
@@ -657,7 +666,7 @@ if __name__ == '__main__':
         # plot gradient magnitudes
         #----------
 
-        plotted = plotGradientMagnitudes(inputDir, mode = 'stat')
+        plotted = plotGradientMagnitudes(inputDir, mode = 'detail')
 
         if plotted and options.savePlots:
             for suffix in (".png", ".pdf", ".svg"):
