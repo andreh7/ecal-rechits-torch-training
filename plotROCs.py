@@ -160,13 +160,16 @@ def addNumEvents(numEventsTrain, numEventsTest):
 
 #----------------------------------------------------------------------
 
-def readROC(fname):
+def readROC(resultDirData, fname, isTrain, returnFullCurve = False):
     # reads a torch file and calculates the area under the ROC
     # curve for it
     # 
     # also looks for a cached file
 
     if fname.endswith(".cached-auc.py"):
+        if returnFullCurve:
+            raise Exception("returnFullCurve is not supported when reading cached AUC files")
+
         # read the cached file
         print "reading",fname
         auc = float(open(fname).read())
@@ -177,8 +180,8 @@ def readROC(fname):
     if fname.endswith(".npz"):
         data = np.load(fname)
 
-        weights = data['weight']
-        labels  = data['label']
+        weights = resultDirData.getWeights(isTrain)
+        labels  = resultDirData.getLabels(isTrain)
         outputs = data['output']
 
     else:
@@ -208,7 +211,10 @@ def readROC(fname):
     modTime = os.path.getmtime(fname)
     os.utime(cachedFname, (modTime, modTime))
 
-    return aucValue
+    if returnFullCurve:
+        return aucValue, len(weights), fpr, tpr
+    else:
+        return aucValue
 
 #----------------------------------------------------------------------
 
