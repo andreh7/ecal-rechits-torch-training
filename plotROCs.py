@@ -56,7 +56,7 @@ class ResultDirData:
             self.testLabels = data['label']
         else:
             # try the BDT file
-            fname = inputDir, "roc-data-%s-mva.npz" % "test"
+            fname = os.path.join(inputDir, "roc-data-%s-mva.npz" % "test")
             data = np.load(fname)
             self.testWeights = data['weight']
             self.testLabels = data['label']
