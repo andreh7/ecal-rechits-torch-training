@@ -481,7 +481,7 @@ def updateHighestTPR(highestTPRs, fpr, tpr, maxfpr):
     highestTPRs.append(highestTPR)
 
 #----------------------------------------------------------------------
-def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch = None, 
+def drawLast(inputDirData, xmax = None, ignoreTrain = False, maxEpoch = None, 
              excludedEpochs = None,
              savePlots = False,
              legendLocation = None
@@ -490,7 +490,7 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
     pylab.figure(facecolor='white')
     
     # read only the file names
-    mvaROC, rocFnames = readROCfiles(inputDir, maxEpoch = maxEpoch, 
+    mvaROC, rocFnames = readROCfiles(inputDirData, maxEpoch = maxEpoch, 
                                      excludedEpochs = excludedEpochs)
 
     #----------
@@ -511,19 +511,21 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
         ('test', 'red'),
         ):
 
-        if ignoreTrain and sample == 'train':
+        isTrain = sample == 'train'
+
+        if ignoreTrain and isTrain:
             continue
         
         # take the last epoch
         if epochNumber != None:
-            fpr, tpr, numEvents[sample] = drawSingleROCcurve(rocFnames[sample][epochNumber], "NN " + sample + " (auc {auc:.3f})", color, '-', 2)
+            fpr, tpr, numEvents[sample] = drawSingleROCcurve(inputDirData, rocFnames[sample][epochNumber], isTrain, "NN " + sample + " (auc {auc:.3f})", color, '-', 2)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)
             
 
         # draw the ROC curve for the MVA id if available
         fname = mvaROC[sample]
         if fname != None:
-            fpr, tpr, dummy = drawSingleROCcurve(fname, "BDT " + sample + " (auc {auc:.3f})", color, '--', 1)
+            fpr, tpr, dummy = drawSingleROCcurve(inputDirData, fname, isTrain, "BDT " + sample + " (auc {auc:.3f})", color, '--', 1)
             updateHighestTPR(highestTPRs, fpr, tpr, xmax)            
 
     pylab.xlabel('fraction of false positives')
@@ -537,20 +539,22 @@ def drawLast(inputDir, description, xmax = None, ignoreTrain = False, maxEpoch =
     pylab.grid()
     pylab.legend(loc = legendLocation)
 
-    addTimestamp(inputDir)
-    addDirname(inputDir)
+    addTimestamp(inputDirData.inputDir)
+    addDirname(inputDirData.inputDir)
     addNumEvents(numEvents.get('train', None), numEvents.get('test', None))
 
-    if description != None:
+    if inputDirData.description != None:
+
+        title = str(inputDirData.description)
 
         if epochNumber != None:
-            description += " (epoch %d)" % epochNumber
+            title += " (epoch %d)" % epochNumber
 
-        pylab.title(description)
+        pylab.title(title)
 
     if savePlots:
         for suffix in (".png", ".pdf", ".svg"):
-            outputFname = os.path.join(inputDir, "last-auc")
+            outputFname = os.path.join(inputDirData.inputDir, "last-auc")
 
             if xmax != None:
                 outputFname += "-%.2f" % xmax
