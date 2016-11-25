@@ -635,13 +635,13 @@ if __name__ == '__main__':
 
     #----------
 
-    description = readDescription(inputDir)
+    resultDirData = ResultDirData(inputDir)
 
     import pylab
 
     if options.last or options.both:
 
-        drawLast(inputDir, description, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
+        drawLast(resultDirData, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
                  excludedEpochs = options.excludedEpochs,
                  savePlots = options.savePlots,
                  legendLocation = options.legendLocation)
@@ -650,7 +650,7 @@ if __name__ == '__main__':
         # autoscaling in y with x axis range manually
         # set seems not to work, so we implement
         # something ourselves..
-        drawLast(inputDir, description, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
+        drawLast(resultDirData, xmax = 0.05, ignoreTrain = options.ignoreTrain, maxEpoch = options.maxEpoch, 
                  excludedEpochs = options.excludedEpochs,
                  savePlots = options.savePlots,
                  legendLocation = options.legendLocation
@@ -662,7 +662,10 @@ if __name__ == '__main__':
         # plot evolution of area under ROC curve vs. epoch
         #----------
 
-        mvaROC, rocValues = readROCfiles(inputDir, readROC, includeCached = True, maxEpoch = options.maxEpoch,
+        mvaROC, rocValues = readROCfiles(resultDirData, 
+                                         readROC, 
+                                         includeCached = True, 
+                                         maxEpoch = options.maxEpoch,
                                          excludedEpochs = options.excludedEpochs)
 
         print "plotting AUC evolution"
@@ -695,8 +698,8 @@ if __name__ == '__main__':
 
         pylab.legend(loc = options.legendLocation)
 
-        if description != None:
-            pylab.title(description)
+        if resultDirData.description != None:
+            pylab.title(resultDirData.description)
 
         addTimestamp(inputDir)
         addDirname(inputDir)
@@ -717,7 +720,7 @@ if __name__ == '__main__':
 
         import plotAUCcorr
 
-        plotAUCcorr.doPlot(inputDir, maxEpoch = options.maxEpoch,
+        plotAUCcorr.doPlot(resultDirData, maxEpoch = options.maxEpoch,
                            excludedEpochs = options.excludedEpochs)
 
         if options.savePlots:
