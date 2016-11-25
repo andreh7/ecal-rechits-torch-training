@@ -348,36 +348,14 @@ def readROCfiles(resultDirData, transformation = None, includeCached = False, ma
 
 #----------------------------------------------------------------------
 
-def drawSingleROCcurve(inputFname, label, color, lineStyle, linewidth):
+def drawSingleROCcurve(resultDirData, inputFname, isTrain, label, color, lineStyle, linewidth):
 
-    print "reading",inputFname
-
-    if inputFname.endswith(".npz"):
-        # numpy file
-        data = np.load(inputFname)
-
-        weights = data['weight']
-        labels  = data['label']
-        outputs = data['output']
-    else:
-        # assume this is a torch file
-        fin = torchio.InputFile(inputFname, "binary")
-
-        data = fin.readObject()
-
-        weights = data['weight'].asndarray()
-        labels  = data['label'].asndarray()
-        outputs = data['output'].asndarray()
-
-    from sklearn.metrics import roc_curve, auc
-
-    fpr, tpr, dummy = roc_curve(labels, outputs, sample_weight = weights)
-    auc = auc(fpr, tpr, reorder = True)
+    auc, numEvents, fpr, tpr = readROC(resultDirData, inputFname, isTrain, returnFullCurve = True)
 
     # TODO: we could add the area to the legend
     pylab.plot(fpr, tpr, lineStyle, color = color, linewidth = linewidth, label = label.format(auc = auc))
 
-    return fpr, tpr, len(weights)
+    return fpr, tpr, numEvents
 
 #----------------------------------------------------------------------
 
