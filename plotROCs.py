@@ -251,7 +251,7 @@ def readDescription(inputDir):
 
 #----------------------------------------------------------------------
 
-def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoch = None,
+def readROCfiles(resultDirData, transformation = None, includeCached = False, maxEpoch = None,
                  excludedEpochs = None):
     # returns mvaROC, rocValues
     # which are dicts of 'test'/'train' to the single value
@@ -263,7 +263,9 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
     # just the name is stored.
 
     if transformation == None:
-        transformation = lambda fname: fname
+        transformation = lambda resultDirData, fname, isTrain: fname
+
+    inputDir = resultDirData.inputDir
 
     #----------
     inputFiles = []
@@ -308,7 +310,9 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
             assert mvaROC.has_key(sampleType)
             assert mvaROC[sampleType] == None
 
-            mvaROC[sampleType] = transformation(inputFname)
+            isTrain = sampleType == 'train'
+
+            mvaROC[sampleType] = transformation(resultDirData, inputFname, isTrain)
 
             continue
 
@@ -325,6 +329,7 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
         if mo:
             sampleType = mo.group(1)
             epoch = int(mo.group(2), 10)
+            isTrain = sampleType == 'train'
 
             if maxEpoch == None or epoch <= maxEpoch:
                 if excludedEpochs == None or not epoch in excludedEpochs:
@@ -334,7 +339,7 @@ def readROCfiles(inputDir, transformation = None, includeCached = False, maxEpoc
                         # (priority is given to the cached files)
                         continue
 
-                rocValues[sampleType][epoch] = transformation(inputFname)
+                rocValues[sampleType][epoch] = transformation(resultDirData, inputFname, isTrain)
             continue
 
         print >> sys.stderr,"WARNING: unmatched filename",inputFname
