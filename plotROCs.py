@@ -65,8 +65,13 @@ class ResultDirData:
 
     def getWeights(self, isTrain):
         if isTrain:
+
             # for training, returns the weights before eta/pt reweighting if available
-            if self.trainWeightsBeforePtEtaReweighting is None: 
+            # self.trainWeightsBeforePtEtaReweighting is None does not work,
+            # 
+            # if there are no trainWeightsBeforePtEtaReweighting, these are array(None, dtype=object)
+
+            if self.trainWeightsBeforePtEtaReweighting.shape == (): 
                 return self.trainWeights
             else:
                 return self.trainWeightsBeforePtEtaReweighting
